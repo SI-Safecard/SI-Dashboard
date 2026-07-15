@@ -73,6 +73,33 @@
   .proj .idtag{display:inline-block;font-size:11px;font-weight:700;color:var(--or-dark);background:var(--or-soft);border-radius:6px;padding:1px 7px;margin-top:5px;font-family:ui-monospace,Menlo,monospace}
   .delbtn{background:none;border:none;color:var(--grey);font-size:15px;cursor:pointer;padding:2px 6px;border-radius:6px}
   .delbtn:hover{background:#FEE2E2;color:var(--nc)}
+  .btn-fin{flex:1;background:var(--or-soft);color:var(--or-dark);border:1px solid var(--or);border-radius:9px;padding:9px 12px;font-size:13px;font-weight:800;cursor:pointer}
+  .btn-fin:hover{background:#FBDDCB}
+  .fin-cta{background:#FFF7ED;border:1px dashed var(--or);color:var(--or-dark);border-radius:8px;padding:7px 10px;font-size:12px;margin:8px 0}
+  .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:flex-start;justify-content:center;z-index:60;padding:24px 14px;overflow:auto}
+  .modal{background:#fff;border-radius:16px;width:100%;max-width:520px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .modal-head h3{font-size:18px}
+  .modal-sub{font-size:12px;color:var(--muted);margin-top:3px}
+  .mx{background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;line-height:1}
+  .modal-note{background:#F1F5F9;border-radius:8px;padding:8px 11px;font-size:12px;color:#475569;margin:12px 0}
+  .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .modal-grid label{display:flex;flex-direction:column;font-size:12px;font-weight:700;color:var(--muted);gap:4px}
+  .modal-grid input{border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:15px;font-weight:600;color:var(--ink)}
+  .modal-grid input:focus{outline:none;border-color:var(--or)}
+  .modal-grid label:last-child{grid-column:1/-1}
+  .fm-calc{margin-top:14px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .fm-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 13px;font-size:13px;border-top:1px solid var(--line)}
+  .fm-row:first-child{border-top:none}
+  .fm-row small{color:var(--muted);font-weight:500}
+  .fm-row b{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .fm-tot{background:#F8FAFC;font-weight:800}
+  .fm-tot span{font-size:12px;letter-spacing:.4px}
+  .modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+  .btn-sec{background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px 16px;font-weight:700;cursor:pointer;color:var(--muted)}
+  .btn-pri{background:var(--green);border:none;color:#fff;border-radius:9px;padding:10px 18px;font-weight:800;cursor:pointer}
+  .btn-pri:disabled{opacity:.6}
+  @media(max-width:520px){.modal-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -151,7 +178,32 @@
   </div>
 </div>
 
+<div id="finModal" class="modal-bg" style="display:none">
+  <div class="modal">
+    <div class="modal-head">
+      <div><h3 id="fmTitle">Costos y rentabilidad</h3><div class="modal-sub" id="fmSub"></div></div>
+      <button class="mx" onclick="closeFin()">✕</button>
+    </div>
+    <p class="modal-note">🔒 Montos confidenciales. Se calculan comparando el valor HH y los días de ejecución reales contra los días presupuestados comercialmente.</p>
+    <div class="modal-grid">
+      <label>Valor día-hombre (HH) $<input type="number" min="0" step="1000" id="fm_tarifa" placeholder="Ej: 45000" oninput="fmPreview()"></label>
+      <label>Días presupuestados (comercial)<input type="number" min="0" step="1" id="fm_diasPres" placeholder="Ej: 20" oninput="fmPreview()"></label>
+      <label>Materiales $<input type="number" min="0" step="1000" id="fm_materiales" placeholder="0" oninput="fmPreview()"></label>
+      <label>Estadía $<input type="number" min="0" step="1000" id="fm_estadia" placeholder="0" oninput="fmPreview()"></label>
+      <label>Viaje $<input type="number" min="0" step="1000" id="fm_viaje" placeholder="0" oninput="fmPreview()"></label>
+      <label>Traslado $<input type="number" min="0" step="1000" id="fm_traslado" placeholder="0" oninput="fmPreview()"></label>
+      <label>Venta / valor comercial $<input type="number" min="0" step="1000" id="fm_venta" placeholder="Para calcular margen" oninput="fmPreview()"></label>
+    </div>
+    <div id="fmCalc" class="fm-calc"></div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="closeFin()">Cancelar</button>
+      <button class="btn-pri" id="fmSave" onclick="saveFin()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
 <script>
+
 /* ====== PEGA AQUÍ LA CONFIG DE TU PROYECTO FIREBASE ====== */
 window.FIREBASE_CONFIG = {
   apiKey: "AIzaSyAglD25oDQfpIBUcMpspe-9QT5JbKc_WQk",
@@ -176,6 +228,44 @@ async function delProy(id,nombre){
   if(!confirm('¿Eliminar “'+nombre+'” del Panel?\n\nEsto borra su registro de la base de datos y no se puede deshacer. (No afecta el archivo local del técnico.)'))return;
   try{ if(window.SafecardDelete){await window.SafecardDelete(id);} else {alert('Eliminación no disponible aún, espera unos segundos y reintenta.');} }
   catch(e){ alert('No se pudo eliminar: '+(e.message||e)); }
+}
+/* ===== MODAL COSTOS / RENTABILIDAD ===== */
+let FIN_ID=null;
+function openFin(id){
+  const p=PROY.find(x=>x.id===id);if(!p)return;FIN_ID=id;
+  document.getElementById('fmTitle').textContent=p.nombre||'Proyecto';
+  document.getElementById('fmSub').innerHTML='🆔 '+esc(pidText(p))+' &nbsp;·&nbsp; 👷 '+esc(p.jefe||'—')+' &nbsp;·&nbsp; '+(p.nTecnicos||0)+' téc &nbsp;·&nbsp; '+(p.diasHombre||0)+' días-hombre &nbsp;·&nbsp; '+(p.diasReales!=null?p.diasReales+' días de ejecución':'días de ejec. s/i');
+  const g=(k,f)=>document.getElementById(k).value=(p[f]!=null&&p[f]!==''?p[f]:'');
+  g('fm_tarifa','fin_tarifa');g('fm_diasPres','fin_diasPres');g('fm_materiales','fin_materiales');g('fm_estadia','fin_estadia');g('fm_viaje','fin_viaje');g('fm_traslado','fin_traslado');g('fm_venta','fin_venta');
+  fmPreview();
+  document.getElementById('finModal').style.display='flex';
+}
+function closeFin(){document.getElementById('finModal').style.display='none';FIN_ID=null;}
+function fmVal(id){return +document.getElementById(id).value||0;}
+function fmPreview(){
+  const p=PROY.find(x=>x.id===FIN_ID)||{};
+  const merged=Object.assign({},p,{fin_tarifa:fmVal('fm_tarifa'),fin_diasPres:fmVal('fm_diasPres'),fin_materiales:fmVal('fm_materiales'),fin_estadia:fmVal('fm_estadia'),fin_viaje:fmVal('fm_viaje'),fin_traslado:fmVal('fm_traslado'),fin_venta:fmVal('fm_venta')});
+  const c=computeFin(merged);
+  const moCol=c.desvioMO>0?'var(--nc)':'var(--green)';
+  const dCol=c.desvioPres==null?'var(--muted)':(c.desvioPres>0?'var(--nc)':'var(--green)');
+  const mgCol=c.margenPct==null?'var(--muted)':(c.margenPct>=0?'var(--green)':'var(--nc)');
+  document.getElementById('fmCalc').innerHTML=`
+    <div class="fm-row"><span>Mano de obra real <small>(${money(c.tarifa)} × ${c.diasHombre} días-hombre)</small></span><b>${money(c.moReal)}</b></div>
+    <div class="fm-row"><span>Mano de obra presupuestada <small>(${c.diasPres} días × ${c.nTec} téc)</small></span><b>${money(c.moPres)}</b></div>
+    <div class="fm-row"><span>Diferencia de mano de obra</span><b style="color:${moCol}">${(c.desvioMO>0?'+':'')+money(c.desvioMO)}</b></div>
+    <div class="fm-row"><span>Días ejecución vs presupuestados</span><b style="color:${dCol}">${c.diasReales!=null?c.diasReales:'—'} / ${c.diasPres||'—'} ${c.desvioPres!=null?'('+(c.desvioPres>0?'+':'')+c.desvioPres+'d)':''}</b></div>
+    <div class="fm-row"><span>Materiales + estadía + viaje + traslado</span><b>${money(c.materiales+c.otros)}</b></div>
+    <div class="fm-row fm-tot"><span>COSTO TOTAL</span><b>${money(c.costoTotal)}</b></div>
+    <div class="fm-row"><span>Costo por equipo <small>(${c.eq} equipos)</small></span><b>${c.costoPorEquipo?money(c.costoPorEquipo):'—'}</b></div>
+    <div class="fm-row fm-tot"><span>MARGEN</span><b style="color:${mgCol}">${c.margen!=null?money(c.margen)+' · '+c.margenPct+'%':'ingresa venta'}</b></div>`;
+}
+async function saveFin(){
+  if(!FIN_ID){closeFin();return;}
+  const data={fin_tarifa:fmVal('fm_tarifa'),fin_diasPres:fmVal('fm_diasPres'),fin_materiales:fmVal('fm_materiales'),fin_estadia:fmVal('fm_estadia'),fin_viaje:fmVal('fm_viaje'),fin_traslado:fmVal('fm_traslado'),fin_venta:fmVal('fm_venta')};
+  const btn=document.getElementById('fmSave');const old=btn.textContent;btn.textContent='Guardando…';btn.disabled=true;
+  try{ if(!window.SafecardSaveFin)throw new Error('conexión no lista, reintenta en unos segundos'); await window.SafecardSaveFin(FIN_ID,data); closeFin(); }
+  catch(e){ alert('No se pudo guardar: '+(e.message||e)); }
+  btn.textContent=old;btn.disabled=false;
 }
 function setView(v){VIEW=v;
   document.getElementById('viewExec').style.display=(v==='exec')?'block':'none';
@@ -247,16 +337,32 @@ function renderExec(activos){
   }).join(''):'<div class="empty" style="padding:16px">Sin proyectos en ejecución.</div>';
 }
 
+function computeFin(p){
+  const tarifa=+p.fin_tarifa||0, diasPres=+p.fin_diasPres||0, materiales=+p.fin_materiales||0;
+  const estadia=+p.fin_estadia||0, viaje=+p.fin_viaje||0, traslado=+p.fin_traslado||0, venta=+p.fin_venta||0;
+  const diasHombre=+p.diasHombre||0, nTec=+p.nTecnicos||0;
+  const diasReales=(p.diasReales!=null)?+p.diasReales:null, eq=+p.equiposTotal||0;
+  const moReal=tarifa*diasHombre, dhPres=diasPres*nTec, moPres=tarifa*dhPres;
+  const otros=estadia+viaje+traslado;
+  const costoTotal=moReal+materiales+otros;
+  const margen=venta?venta-costoTotal:null, margenPct=venta?Math.round((venta-costoTotal)/venta*100):null;
+  const costoPorEquipo=eq?Math.round(costoTotal/eq):0;
+  const desvioPres=(diasReales!=null&&diasPres)?(diasReales-diasPres):null;
+  const desvioMO=moReal-moPres;
+  const hasData=tarifa>0||materiales>0||otros>0||venta>0||diasPres>0;
+  return{tarifa,diasPres,materiales,estadia,viaje,traslado,venta,diasHombre,nTec,diasReales,eq,moReal,dhPres,moPres,otros,costoTotal,margen,margenPct,costoPorEquipo,desvioPres,desvioMO,hasData};
+}
 function renderFin(fin){
   document.getElementById('finEmpty').style.display=fin.length?'none':'block';
-  // KPIs acumulados
+  const FC=fin.map(p=>({p,c:computeFin(p)}));
+  const withData=FC.filter(x=>x.c.hasData);
   const n=fin.length;
-  const costoTot=fin.reduce((a,p)=>a+(p.costoTotal||0),0);
-  const mgs=fin.filter(p=>p.margenPct!=null);
-  const mgAvg=mgs.length?Math.round(mgs.reduce((a,p)=>a+p.margenPct,0)/mgs.length):null;
-  const dvs=fin.filter(p=>p.desvioDias!=null);
-  const dvAvg=dvs.length?Math.round(dvs.reduce((a,p)=>a+p.desvioDias,0)/dvs.length):0;
-  const eqTot=fin.reduce((a,p)=>a+(p.equiposTotal||0),0);
+  const costoTot=withData.reduce((a,x)=>a+x.c.costoTotal,0);
+  const mgs=withData.filter(x=>x.c.margenPct!=null);
+  const mgAvg=mgs.length?Math.round(mgs.reduce((a,x)=>a+x.c.margenPct,0)/mgs.length):null;
+  const dvs=FC.filter(x=>x.c.desvioPres!=null);
+  const dvAvg=dvs.length?Math.round(dvs.reduce((a,x)=>a+x.c.desvioPres,0)/dvs.length):0;
+  const eqTot=withData.reduce((a,x)=>a+x.c.eq,0);
   const cxe=eqTot?Math.round(costoTot/eqTot):0;
   document.getElementById('fN').textContent=n;
   document.getElementById('fCosto').textContent=money(costoTot);
@@ -264,44 +370,48 @@ function renderFin(fin){
   document.getElementById('fDesvio').textContent=(dvAvg>0?'+':'')+dvAvg;
   document.getElementById('fCxE').textContent=money(cxe);
 
-  // barras costo por proyecto
-  const maxC=Math.max(1,...fin.map(p=>p.costoTotal||0));
-  const bl=fin.slice().sort((a,b)=>(b.costoTotal||0)-(a.costoTotal||0));
-  document.getElementById('finBars').innerHTML=bl.length?bl.map(p=>{
-    const w=Math.round((p.costoTotal||0)/maxC*100);
-    return `<div class="bar-row"><span class="bn" title="${esc(p.nombre)}">${esc(p.nombre||'—')}</span><div class="bt"><span style="width:${w}%;background:var(--or)"></span></div><span class="bv money">${money(p.costoTotal).replace('$ ','$')}</span></div>`;
+  const maxC=Math.max(1,...FC.map(x=>x.c.costoTotal));
+  const bl=FC.slice().sort((a,b)=>b.c.costoTotal-a.c.costoTotal);
+  document.getElementById('finBars').innerHTML=bl.length?bl.map(({p,c})=>{
+    const w=Math.round(c.costoTotal/maxC*100);
+    return `<div class="bar-row"><span class="bn" title="${esc(p.nombre)}">${esc(p.nombre||'—')}</span><div class="bt"><span style="width:${w}%;background:var(--or)"></span></div><span class="bv money">${c.costoTotal?money(c.costoTotal).replace('$ ','$'):'—'}</span></div>`;
   }).join(''):'<div class="empty" style="padding:16px">Sin proyectos finalizados.</div>';
 
-  // tarjetas de cierre
-  const cards=fin.slice().sort((a,b)=>{const ta=a.updatedAt&&a.updatedAt.seconds?a.updatedAt.seconds:0,tb=b.updatedAt&&b.updatedAt.seconds?b.updatedAt.seconds:0;return tb-ta;});
-  document.getElementById('finCards').innerHTML=cards.map(p=>{
-    const desv=p.desvioDias;
-    const desvTxt=desv==null?'—':(desv>0?('+'+desv+' días'):(desv<0?(desv+' días'):'en plazo'));
+  const cards=FC.slice().sort((a,b)=>{const ta=a.p.updatedAt&&a.p.updatedAt.seconds?a.p.updatedAt.seconds:0,tb=b.p.updatedAt&&b.p.updatedAt.seconds?b.p.updatedAt.seconds:0;return tb-ta;});
+  document.getElementById('finCards').innerHTML=cards.map(({p,c})=>{
+    const desv=c.desvioPres;
+    const desvTxt=desv==null?'—':(desv>0?('+'+desv+' días'):(desv<0?(desv+' días'):'en presupuesto'));
     const desvCol=desv==null?'var(--muted)':(desv>0?'var(--nc)':'var(--green)');
-    const mg=p.margenPct;
+    const mg=c.margenPct;
     const mgCol=mg==null?'var(--muted)':(mg>=0?'var(--green)':'var(--nc)');
+    const cta=c.hasData?'':`<div class="fin-cta">Aún sin montos. Toca <b>Ingresar costos</b> para calcular la rentabilidad.</div>`;
     return `<div class="proj e-grey" style="--x:0">
       <div class="estado" style="background:#DCFCE7;color:var(--green)">Finalizado</div>
       <div class="nm">${esc(p.nombre||'(sin nombre)')}</div>
       <div class="sub">👷 ${esc(p.jefe||'—')}${p.comuna?' · '+esc(p.comuna):''}${p.fechaCierre?' · cerró '+esc(p.fechaCierre):''}</div>
       <div><span class="idtag">🆔 ${esc(pidText(p))}</span></div>
-      <div class="big"><span class="p money">${money(p.costoTotal)}</span><span class="pl">costo total</span></div>
+      ${cta}
+      <div class="big"><span class="p money">${money(c.costoTotal)}</span><span class="pl">costo total</span></div>
       <div class="mini">
-        <div><div class="mv money">${money(p.costoMateriales)}</div><div class="ml">Materiales</div></div>
-        <div><div class="mv money">${money(p.costoMO)}</div><div class="ml">Mano de obra</div></div>
-        <div><div class="mv money">${money(p.otrosCostos)}</div><div class="ml">Otros</div></div>
+        <div><div class="mv money">${money(c.moReal)}</div><div class="ml">Mano de obra</div></div>
+        <div><div class="mv money">${money(c.materiales)}</div><div class="ml">Materiales</div></div>
+        <div><div class="mv money">${money(c.otros)}</div><div class="ml">Estadía/viaje/traslado</div></div>
       </div>
       <div class="mini" style="margin-top:8px">
-        <div><div class="mv" style="color:${desvCol}">${desvTxt}</div><div class="ml">Plazo (real vs plan)</div></div>
+        <div><div class="mv" style="color:${desvCol}">${desvTxt}</div><div class="ml">Días reales vs presup.</div></div>
+        <div><div class="mv">${c.diasReales!=null?c.diasReales:'—'}/${c.diasPres||'—'}</div><div class="ml">Ejec. / presup.</div></div>
         <div><div class="mv">${p.diasHombre||0}</div><div class="ml">Días-hombre</div></div>
-        <div><div class="mv">${Math.round(p.qcConf||0)}%</div><div class="ml">Conformidad QC</div></div>
       </div>
       <div class="mini" style="margin-top:8px">
-        <div><div class="mv money">${p.venta?money(p.venta):'—'}</div><div class="ml">Venta</div></div>
-        <div><div class="mv money" style="color:${mgCol}">${p.margen!=null?money(p.margen):'—'}</div><div class="ml">Margen $</div></div>
+        <div><div class="mv money">${c.venta?money(c.venta):'—'}</div><div class="ml">Venta</div></div>
+        <div><div class="mv money" style="color:${mgCol}">${c.margen!=null?money(c.margen):'—'}</div><div class="ml">Margen $</div></div>
         <div><div class="mv" style="color:${mgCol}">${mg==null?'—':mg+'%'}</div><div class="ml">Margen %</div></div>
       </div>
-      <div class="foot"><span>📦 ${p.equiposTotal||0} equipos · ${money(p.costoPorEquipo)}/equipo</span><span>${p.diasReales!=null?p.diasReales+'d reales':''}${p.diasPlan!=null?' / '+p.diasPlan+'d plan':''} <button class="delbtn" title="Eliminar del panel" onclick="delProy('${esc(p.id)}','${esc((p.nombre||'').replace(/'/g,''))}')">🗑</button></span></div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn-fin" onclick="openFin('${esc(p.id)}')">💰 Ingresar / editar costos</button>
+        <button class="delbtn" title="Eliminar del panel" onclick="delProy('${esc(p.id)}','${esc((p.nombre||'').replace(/'/g,''))}')">🗑</button>
+      </div>
+      <div class="foot"><span>📦 ${p.equiposTotal||0} equipos · ${c.costoPorEquipo?money(c.costoPorEquipo)+'/equipo':'—'}</span><span>${p.diasReales!=null?p.diasReales+'d reales':''}</span></div>
     </div>`;
   }).join('');
 }
@@ -336,7 +446,7 @@ service cloud.firestore {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-import { getFirestore, collection, onSnapshot, query, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, query, doc, deleteDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
 
 const FB=window.FIREBASE_CONFIG;
@@ -352,6 +462,7 @@ else{
     document.getElementById('app').style.display='block';
     document.getElementById('setupGate').style.display='none';
     window.SafecardDelete=async(id)=>{ await deleteDoc(doc(db,'proyectos',id)); };
+    window.SafecardSaveFin=async(id,data)=>{ await setDoc(doc(db,'proyectos',id),Object.assign({},data,{finUpdatedAt:serverTimestamp()}),{merge:true}); };
     onSnapshot(query(collection(db,'proyectos')),(snap)=>{
       window.PROY=[]; PROY=[];
       snap.forEach(d=>PROY.push(Object.assign({id:d.id},d.data())));
