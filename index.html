@@ -80,6 +80,7 @@
   .btn-fin{flex:1;background:var(--or-soft);color:var(--or-dark);border:1px solid var(--or);border-radius:9px;padding:9px 12px;font-size:13px;font-weight:800;cursor:pointer}
   .btn-fin:hover{background:#FBDDCB}
   .fin-cta{background:#FFF7ED;border:1px dashed var(--or);color:var(--or-dark);border-radius:8px;padding:7px 10px;font-size:12px;margin:8px 0}
+  .fin-plazo{display:flex;flex-direction:column;gap:2px;background:#F8FAFC;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;margin:8px 0}
   .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:flex-start;justify-content:center;z-index:60;padding:24px 14px;overflow:auto}
   .modal{background:#fff;border-radius:16px;width:100%;max-width:520px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
   .modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
@@ -228,6 +229,8 @@ let VIEW='exec';
 function isFin(p){return p.finalizado===true || (p.estado||'').toString().toLowerCase()==='finalizado';}
 function money(n){if(n==null||isNaN(n))return'—';return '$ '+Math.round(n).toLocaleString('es-CL');}
 function pidText(p){return p.pid&&p.pid.trim()?p.pid.trim():String(p.id||'').replace(/^p_/,'');}
+function fmtD(iso){if(!iso)return'—';const d=new Date(iso+'T00:00');if(isNaN(d))return'—';return d.toLocaleDateString('es-CL');}
+function daysDiff(a,b){if(!a||!b)return null;const d=(new Date(b+'T00:00')-new Date(a+'T00:00'))/86400000;return isNaN(d)?null:Math.round(d);}
 async function delProy(id,nombre){
   if(!confirm('¿Eliminar “'+nombre+'” del Panel?\n\nEsto borra su registro de la base de datos y no se puede deshacer. (No afecta el archivo local del técnico.)'))return;
   try{ if(window.SafecardDelete){await window.SafecardDelete(id);} else {alert('Eliminación no disponible aún, espera unos segundos y reintenta.');} }
@@ -394,6 +397,7 @@ function renderFin(fin){
       <div class="nm">${esc(p.nombre||'(sin nombre)')}</div>
       <div class="sub">👷 ${esc(p.jefe||'—')}${p.comuna?' · '+esc(p.comuna):''}${p.fechaCierre?' · cerró '+esc(p.fechaCierre):''}</div>
       <div><span class="idtag">🆔 ${esc(pidText(p))}</span></div>
+      ${(()=>{const term=p.fechaCierre||'';const lim=p.limite||'';const dif=daysDiff(lim,term);let txt,col;if(!lim){txt='sin fecha límite';col='var(--muted)';}else if(dif==null){txt='término s/i';col='var(--muted)';}else if(dif<=0){txt='En plazo'+(dif<0?(' ('+Math.abs(dif)+'d antes)'):'');col='var(--green)';}else{txt='+'+dif+' días fuera de plazo';col='var(--nc)';}return `<div class="fin-plazo"><span>📄 Límite contrato: <b>${fmtD(lim)}</b></span><span>🏁 Término real: <b>${fmtD(term)}</b></span><span style="color:${col};font-weight:800">${txt}</span></div>`;})()}
       ${cta}
       <div class="big"><span class="p money">${money(c.costoTotal)}</span><span class="pl">costo total</span></div>
       <div class="mini">
