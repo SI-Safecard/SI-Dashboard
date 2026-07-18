@@ -193,6 +193,7 @@
     <div class="modal-grid">
       <label>Valor día-hombre (HH) $<input type="number" min="0" step="1000" id="fm_tarifa" placeholder="Ej: 45000" oninput="fmPreview()"></label>
       <label>Días presupuestados (comercial)<input type="number" min="0" step="1" id="fm_diasPres" placeholder="Ej: 20" oninput="fmPreview()"></label>
+      <label>Días de ejecución (real) <small style="font-weight:400;color:var(--muted)">deja vacío para usar el calculado</small><input type="number" min="0" step="1" id="fm_diasReales" placeholder="" oninput="fmPreview()"></label>
       <label>Materiales $<input type="number" min="0" step="1000" id="fm_materiales" placeholder="0" oninput="fmPreview()"></label>
       <label>Estadía $<input type="number" min="0" step="1000" id="fm_estadia" placeholder="0" oninput="fmPreview()"></label>
       <label>Viaje $<input type="number" min="0" step="1000" id="fm_viaje" placeholder="0" oninput="fmPreview()"></label>
@@ -243,24 +244,26 @@ function openFin(id){
   document.getElementById('fmTitle').textContent=p.nombre||'Proyecto';
   document.getElementById('fmSub').innerHTML='🆔 '+esc(pidText(p))+' &nbsp;·&nbsp; 👷 '+esc(p.jefe||'—')+' &nbsp;·&nbsp; '+(p.nTecnicos||0)+' téc &nbsp;·&nbsp; '+(p.diasHombre||0)+' días-hombre &nbsp;·&nbsp; '+(p.diasReales!=null?p.diasReales+' días de ejecución':'días de ejec. s/i');
   const g=(k,f)=>document.getElementById(k).value=(p[f]!=null&&p[f]!==''?p[f]:'');
-  g('fm_tarifa','fin_tarifa');g('fm_diasPres','fin_diasPres');g('fm_materiales','fin_materiales');g('fm_estadia','fin_estadia');g('fm_viaje','fin_viaje');g('fm_traslado','fin_traslado');g('fm_venta','fin_venta');
+  g('fm_tarifa','fin_tarifa');g('fm_diasPres','fin_diasPres');g('fm_materiales','fin_materiales');g('fm_estadia','fin_estadia');g('fm_viaje','fin_viaje');g('fm_traslado','fin_traslado');g('fm_venta','fin_venta');g('fm_diasReales','fin_diasReales');
+  document.getElementById('fm_diasReales').placeholder=(p.diasReales!=null?('calculado: '+p.diasReales):'sin dato');
   fmPreview();
   document.getElementById('finModal').style.display='flex';
 }
 function closeFin(){document.getElementById('finModal').style.display='none';FIN_ID=null;}
 function fmVal(id){return +document.getElementById(id).value||0;}
+function fmValStr(id){const v=document.getElementById(id).value.trim();return v===''?'':+v;}
 function fmPreview(){
   const p=PROY.find(x=>x.id===FIN_ID)||{};
-  const merged=Object.assign({},p,{fin_tarifa:fmVal('fm_tarifa'),fin_diasPres:fmVal('fm_diasPres'),fin_materiales:fmVal('fm_materiales'),fin_estadia:fmVal('fm_estadia'),fin_viaje:fmVal('fm_viaje'),fin_traslado:fmVal('fm_traslado'),fin_venta:fmVal('fm_venta')});
+  const merged=Object.assign({},p,{fin_tarifa:fmVal('fm_tarifa'),fin_diasPres:fmVal('fm_diasPres'),fin_materiales:fmVal('fm_materiales'),fin_estadia:fmVal('fm_estadia'),fin_viaje:fmVal('fm_viaje'),fin_traslado:fmVal('fm_traslado'),fin_venta:fmVal('fm_venta'),fin_diasReales:fmValStr('fm_diasReales')});
   const c=computeFin(merged);
   const moCol=c.desvioMO>0?'var(--nc)':'var(--green)';
   const dCol=c.desvioPres==null?'var(--muted)':(c.desvioPres>0?'var(--nc)':'var(--green)');
   const mgCol=c.margenPct==null?'var(--muted)':(c.margenPct>=0?'var(--green)':'var(--nc)');
   document.getElementById('fmCalc').innerHTML=`
-    <div class="fm-row"><span>Mano de obra real <small>(${money(c.tarifa)} × ${c.diasHombre} días-hombre)</small></span><b>${money(c.moReal)}</b></div>
+    <div class="fm-row"><span>Mano de obra real <small>(${money(c.tarifa)} × ${c.diasHombre} días-hombre${c.diasRealesEdit?' · '+c.diasReales+'d × '+c.nTec+' téc, editado':''})</small></span><b>${money(c.moReal)}</b></div>
     <div class="fm-row"><span>Mano de obra presupuestada <small>(${c.diasPres} días × ${c.nTec} téc)</small></span><b>${money(c.moPres)}</b></div>
     <div class="fm-row"><span>Diferencia de mano de obra</span><b style="color:${moCol}">${(c.desvioMO>0?'+':'')+money(c.desvioMO)}</b></div>
-    <div class="fm-row"><span>Días ejecución vs presupuestados</span><b style="color:${dCol}">${c.diasReales!=null?c.diasReales:'—'} / ${c.diasPres||'—'} ${c.desvioPres!=null?'('+(c.desvioPres>0?'+':'')+c.desvioPres+'d)':''}</b></div>
+    <div class="fm-row"><span>Días ejecución vs presupuestados${c.diasRealesEdit?' <small style="color:var(--or-dark)">(editado)</small>':''}</span><b style="color:${dCol}">${c.diasReales!=null?c.diasReales:'—'} / ${c.diasPres||'—'} ${c.desvioPres!=null?'('+(c.desvioPres>0?'+':'')+c.desvioPres+'d)':''}</b></div>
     <div class="fm-row"><span>Materiales + estadía + viaje + traslado</span><b>${money(c.materiales+c.otros)}</b></div>
     <div class="fm-row fm-tot"><span>COSTO TOTAL</span><b>${money(c.costoTotal)}</b></div>
     <div class="fm-row"><span>Costo por equipo <small>(${c.eq} equipos)</small></span><b>${c.costoPorEquipo?money(c.costoPorEquipo):'—'}</b></div>
@@ -268,7 +271,7 @@ function fmPreview(){
 }
 async function saveFin(){
   if(!FIN_ID){closeFin();return;}
-  const data={fin_tarifa:fmVal('fm_tarifa'),fin_diasPres:fmVal('fm_diasPres'),fin_materiales:fmVal('fm_materiales'),fin_estadia:fmVal('fm_estadia'),fin_viaje:fmVal('fm_viaje'),fin_traslado:fmVal('fm_traslado'),fin_venta:fmVal('fm_venta')};
+  const data={fin_tarifa:fmVal('fm_tarifa'),fin_diasPres:fmVal('fm_diasPres'),fin_materiales:fmVal('fm_materiales'),fin_estadia:fmVal('fm_estadia'),fin_viaje:fmVal('fm_viaje'),fin_traslado:fmVal('fm_traslado'),fin_venta:fmVal('fm_venta'),fin_diasReales:fmValStr('fm_diasReales')};
   const btn=document.getElementById('fmSave');const old=btn.textContent;btn.textContent='Guardando…';btn.disabled=true;
   try{ if(!window.SafecardSaveFin)throw new Error('conexión no lista, reintenta en unos segundos'); await window.SafecardSaveFin(FIN_ID,data); closeFin(); }
   catch(e){ alert('No se pudo guardar: '+(e.message||e)); }
@@ -347,8 +350,12 @@ function renderExec(activos){
 function computeFin(p){
   const tarifa=+p.fin_tarifa||0, diasPres=+p.fin_diasPres||0, materiales=+p.fin_materiales||0;
   const estadia=+p.fin_estadia||0, viaje=+p.fin_viaje||0, traslado=+p.fin_traslado||0, venta=+p.fin_venta||0;
-  const diasHombre=+p.diasHombre||0, nTec=+p.nTecnicos||0;
-  const diasReales=(p.diasReales!=null)?+p.diasReales:null, eq=+p.equiposTotal||0;
+  const nTec=+p.nTecnicos||0, eq=+p.equiposTotal||0;
+  const diasRealesCalc=(p.diasReales!=null)?+p.diasReales:null;
+  const ovr=(p.fin_diasReales!=null&&p.fin_diasReales!=='')?+p.fin_diasReales:null;
+  const diasReales=ovr!=null?ovr:diasRealesCalc;
+  const diasRealesEdit=ovr!=null;
+  const diasHombre=ovr!=null?(ovr*nTec):(+p.diasHombre||0);
   const moReal=tarifa*diasHombre, dhPres=diasPres*nTec, moPres=tarifa*dhPres;
   const otros=estadia+viaje+traslado;
   const costoTotal=moReal+materiales+otros;
@@ -357,7 +364,7 @@ function computeFin(p){
   const desvioPres=(diasReales!=null&&diasPres)?(diasReales-diasPres):null;
   const desvioMO=moReal-moPres;
   const hasData=tarifa>0||materiales>0||otros>0||venta>0||diasPres>0;
-  return{tarifa,diasPres,materiales,estadia,viaje,traslado,venta,diasHombre,nTec,diasReales,eq,moReal,dhPres,moPres,otros,costoTotal,margen,margenPct,costoPorEquipo,desvioPres,desvioMO,hasData};
+  return{tarifa,diasPres,materiales,estadia,viaje,traslado,venta,diasHombre,nTec,diasReales,diasRealesCalc,diasRealesEdit,eq,moReal,dhPres,moPres,otros,costoTotal,margen,margenPct,costoPorEquipo,desvioPres,desvioMO,hasData};
 }
 function renderFin(fin){
   document.getElementById('finEmpty').style.display=fin.length?'none':'block';
@@ -408,7 +415,7 @@ function renderFin(fin){
       <div class="mini" style="margin-top:8px">
         <div><div class="mv" style="color:${desvCol}">${desvTxt}</div><div class="ml">Días reales vs presup.</div></div>
         <div><div class="mv">${c.diasReales!=null?c.diasReales:'—'}/${c.diasPres||'—'}</div><div class="ml">Ejec. / presup.</div></div>
-        <div><div class="mv">${p.diasHombre||0}</div><div class="ml">Días-hombre</div></div>
+        <div><div class="mv">${c.diasHombre||0}</div><div class="ml">Días-hombre</div></div>
       </div>
       <div class="mini" style="margin-top:8px">
         <div><div class="mv money">${c.venta?money(c.venta):'—'}</div><div class="ml">Venta</div></div>
@@ -419,7 +426,7 @@ function renderFin(fin){
         <button class="btn-fin" onclick="openFin('${esc(p.id)}')">💰 Ingresar / editar costos</button>
         <button class="delbtn" title="Eliminar del panel" onclick="delProy('${esc(p.id)}','${esc((p.nombre||'').replace(/'/g,''))}')">🗑</button>
       </div>
-      <div class="foot"><span>📦 ${p.equiposTotal||0} equipos · ${c.costoPorEquipo?money(c.costoPorEquipo)+'/equipo':'—'}</span><span>${p.diasReales!=null?p.diasReales+'d reales':''}</span></div>
+      <div class="foot"><span>📦 ${p.equiposTotal||0} equipos · ${c.costoPorEquipo?money(c.costoPorEquipo)+'/equipo':'—'}</span><span>${c.diasReales!=null?c.diasReales+'d reales'+(c.diasRealesEdit?' ✎':''):''}</span></div>
     </div>`;
   }).join('');
 }
