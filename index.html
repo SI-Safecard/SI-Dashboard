@@ -486,13 +486,27 @@ async function matEnviar(){
   let code='';
   try{
     if(!window.SCM_ENDPOINT||/PEGA_AQUI/.test(window.SCM_ENDPOINT)) throw new Error('Falta configurar el conector de correo/planilla (Apps Script).');
-    const res=await fetch(window.SCM_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
-    const data=await res.json();
-    if(!data||!data.ok) throw new Error((data&&data.error)||'Respuesta inválida del conector.');
-    code=data.code||'';
+    var data=null, sinConfirmar=false;
+    try{
+      const res=await fetch(window.SCM_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+      data=await res.json();
+    }catch(networkErr){
+      // "Failed to fetch": típico cuando Apps Script redirige internamente a
+      // script.googleusercontent.com para servir la respuesta y el navegador no
+      // logra leerla por CORS, aunque el servidor SÍ procesó la solicitud.
+      // Reintentamos en modo no-cors para asegurar el envío (correo + planilla),
+      // aunque no podamos leer el código de vuelta.
+      await fetch(window.SCM_ENDPOINT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+      sinConfirmar=true;
+    }
+    if(data && !data.ok) throw new Error(data.error||'Respuesta inválida del conector.');
+    code=(data&&data.code)||'';
     // guardar historial en Firestore
     try{ if(window.SafecardSolic) await window.SafecardSolic.save(Object.assign({code},payload)); }catch(e){}
-    msg.textContent='✅ Enviado'+(code?(' · '+code):'');msg.style.color='var(--green)';
+    msg.textContent = sinConfirmar
+      ? '✅ Enviado (sin confirmación del servidor — revisa la planilla en un minuto)'
+      : '✅ Enviado'+(code?(' · '+code):'');
+    msg.style.color='var(--green)';
     document.getElementById('mObs').value='';document.getElementById('mItems').innerHTML='';matAddItem();
     renderMatHist();
   }catch(e){
