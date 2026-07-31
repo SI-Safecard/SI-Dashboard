@@ -1191,10 +1191,10 @@ function cerrarDiagModal(){ const m=document.getElementById('diagModal'); if(m) 
    coincide con el proyecto y abre el link directo a esa hoja (gid),
    sin incrustar nada — respeta los permisos normales de Sheets.
    =================================================================== */
+window.REDES_SHEET_ID_1 = "15oSekVAR1B1UXn126vd2PXgU4Sr8xBXIXADjq0EOGgc"; // Redes Safecard 1
+window.REDES_SHEET_ID_2 = "1E1miFfrLoQdkEmrySMbKoanO7k77iZi-pRY5iYXVhUY"; // Redes Safecard 2 (10.0.77.XXX - 10.0.193.XXX)
 window.REDES_SHEET_ID_3 = "19n5nV7cPumUWWA_Q_aixGvIOe3EgSalmmbr84-y1Epw"; // Redes Safecard 3 (10.0.194.XXX - YYY)
-// Si más adelante Ignacio confirma los IDs de "Redes Safecard 1" y "2" (las versiones
-// vigentes, con una pestaña real por proyecto), agrégalos aquí y el buscador los recorre también:
-window.REDES_SHEET_IDS = [window.REDES_SHEET_ID_3].filter(Boolean);
+window.REDES_SHEET_IDS = [window.REDES_SHEET_ID_1, window.REDES_SHEET_ID_2, window.REDES_SHEET_ID_3].filter(Boolean);
 
 let _sheetsTabsCache = {}; // spreadsheetId -> [{sheetId,title}]
 function normalizaTexto(s){
