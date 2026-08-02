@@ -1291,7 +1291,7 @@ else{
     onSnapshot(query(collection(db,'proyectos')),(snap)=>{
       window.PROY=[]; PROY=[];
       snap.forEach(d=>PROY.push(Object.assign({id:d.id},d.data())));
-      const live=PROY.filter(p=>{const e=(p.estado||'').toLowerCase();return !isFin(p)&&(e.indexOf('ejecuc')>=0||e.indexOf('revis')>=0);}).length;
+      const live=PROY.filter(p=>!isFin(p)).length;
       dot.classList.add('on'); txt.textContent='En vivo · '+live+' proyecto(s)';
       render();
     },(err)=>{ dot.classList.remove('on'); txt.textContent='Error de lectura'; showSetup('No se pudo leer Firestore: '+err.message+'. Revisa las reglas.'); });
