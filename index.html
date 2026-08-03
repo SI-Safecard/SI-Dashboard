@@ -671,7 +671,7 @@ function showSetup(msg){
   const g=document.getElementById('setupGate');g.style.display='block';
   g.innerHTML=`<div class="setup">
     <h3>⚙️ Falta conectar Firebase</h3>
-    ${msg?('<p style="color:var(--nc);font-weight:600">'+esc(msg)+'</p>'):''}
+    ${msg?('<p style="color:var(--nc);font-weight:600">'+esc(msg)+'</p><button class="btn primary" onclick="location.reload()" style="margin-bottom:14px">🔄 Reintentar</button>'):''}
     <p>Este panel lee los avances en vivo desde tu proyecto de Firebase. Configúralo una vez:</p>
     <ol>
       <li>Entra a <code>console.firebase.google.com</code> y crea un proyecto (gratis).</li>
