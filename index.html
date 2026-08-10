@@ -141,6 +141,7 @@
       <button id="tabExec" class="vtab active" onclick="setView('exec')">🏗️ En ejecución <span class="cnt" id="nExec">0</span></button>
       <button id="tabFin" class="vtab" onclick="setView('fin')">🏁 Finalizados <span class="cnt" id="nFin">0</span></button>
       <button id="tabMat" class="vtab" onclick="setView('mat')">📦 Solicitud de materiales</button>
+      <a class="vtab" href="#" id="tabRendicion" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">💰 Rendición de Gastos</a>
     </div>
     <div id="viewMat" style="display:none">
       <div class="card" style="max-width:820px">
@@ -284,6 +285,8 @@ window.FIREBASE_CONFIG = {
 
 window.SCM_ENDPOINT="https://script.google.com/macros/s/AKfycbxOu0BZBtw_BJdtlYs7lhU7fxGt6HC3jkFgPxQQ36ZNrBAMMsc5AoGXOZ2I6zl7u_Jmqw/exec";
 window.APP_SEGUIMIENTO_URL="https://si-safecard.github.io/SI-Safecard/"; // app SI-Safecard (Seguimiento)
+window.APP_RENDICION_URL="https://si-safecard.github.io/Rendicion-Safecard/"; // app Rendición de Gastos
+document.addEventListener('DOMContentLoaded',()=>{const a=document.getElementById('tabRendicion');if(a)a.href=window.APP_RENDICION_URL;});
 window.GOOGLE_CLIENT_ID="722203246514-2ljn6due7pt0ihiv8d00ffmu2bbp0if8.apps.googleusercontent.com";
 /* Correos que pueden ver la pestaña FINALIZADOS (rentabilidad) */
 window.PANEL_FIN_VIEWERS=["ignacio.fuentes@safecard.cl","pablo.abarca@safecard.cl"];
@@ -559,6 +562,7 @@ function renderExec(activos){
       </div>
       <div class="foot"><span>🧰 ${p.nTecnicos||0} téc${p.equiposEnTerreno!=null?' · 📍 '+p.equiposEnTerreno+'/'+(p.equiposTotal||0)+' en terreno':''}</span><span>⟳ ${since(p.updatedAt)} <button class="delbtn" title="Eliminar del panel" onclick="delProy('${esc(p.id)}','${esc((p.nombre||'').replace(/'/g,''))}')">🗑</button></span></div>
       ${puedeContinuar()?`<a class="btn-cont" href="${esc(window.APP_SEGUIMIENTO_URL)}?proyecto=${encodeURIComponent(p.id)}" target="_blank" rel="noopener">▶️ Continuar avance</a>`:''}
+      ${puedeVerFin()?`<a class="btn-cont" style="background:#F26522;margin-top:6px" href="${esc(window.APP_SEGUIMIENTO_URL)}?proyecto=${encodeURIComponent(p.id)}&accion=acta" target="_blank" rel="noopener">📝 Generar Acta de Entrega</a>`:''}
       <button class="btn-cont" style="background:#EDE9FE;color:#6D28D9;border:1px solid #C4B5FD;width:100%;margin-top:6px;cursor:pointer" onclick="abrirDiagramaProyecto('${esc((p.nombre||'').replace(/'/g,"\\'"))}')">🗺️ Ver diagrama de red</button>
       <button class="btn-cont" style="background:#DCFCE7;color:#15803D;border:1px solid #86EFAC;width:100%;margin-top:6px;cursor:pointer" onclick="abrirArchivoRedes('${esc((p.nombre||'').replace(/'/g,"\\'"))}')">📊 Ver archivo de redes</button>
     </div>`;
