@@ -155,6 +155,7 @@
         <div id="matForm">
           <label class="fl">Solicitante</label>
           <select id="mSolic" onchange="matSolicChange()"></select>
+          <div id="mCorreoAviso" style="display:none;margin-top:6px;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600"></div>
           <div class="mrow2">
             <div>
               <label class="fl">Destino</label>
@@ -443,9 +444,23 @@ function matProyectoChange(){
   inp.style.display=manual?'block':'none';
   if(manual)inp.focus(); else inp.value='';
 }
+function correoSesion(){ return (PANEL_EMAIL||(panelUserSaved()||{}).email||'').toLowerCase(); }
 function matSolicChange(){
   const t=(window.TECNICOS||[])[+document.getElementById('mSolic').value];
   if(t&&MAT_DESTINO==='camioneta')document.getElementById('mPatente').value=t.patente||'';
+  const aviso=document.getElementById('mCorreoAviso');
+  const miCorreo=correoSesion();
+  if(!t||!miCorreo){ aviso.style.display='none'; return; }
+  if(!t.correo){ aviso.style.display='none'; return; }
+  if(t.correo.toLowerCase()!==miCorreo){
+    aviso.style.display='block';
+    aviso.style.background='#FEF3C7';aviso.style.color='#92400E';
+    aviso.textContent='⚠️ Iniciaste sesión como '+miCorreo+', pero elegiste a "'+t.nombre+'". ¿Seguro que no es tu nombre el que falta seleccionar?';
+  }else{
+    aviso.style.display='block';
+    aviso.style.background='#DCFCE7';aviso.style.color='#15803D';
+    aviso.textContent='✅ Coincide con la cuenta con la que iniciaste sesión.';
+  }
 }
 function matDestino(d){
   MAT_DESTINO=d;
@@ -472,6 +487,10 @@ function matItems(){
 async function matEnviar(){
   const t=(window.TECNICOS||[])[+document.getElementById('mSolic').value];
   if(!t){alert('Selecciona el solicitante.');return;}
+  const miCorreo=correoSesion();
+  if(t.correo && miCorreo && t.correo.toLowerCase()!==miCorreo){
+    if(!confirm('Iniciaste sesión como '+miCorreo+', pero la solicitud va a nombre de "'+t.nombre+'" ('+t.correo+').\n\n¿Seguro que quieres enviarla así?')) return;
+  }
   const items=matItems();
   if(!items.length){alert('Agrega al menos un artículo.');return;}
   let destinoTxt='',destinoRef='';
