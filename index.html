@@ -169,7 +169,8 @@
             </div>
             <div id="mProjWrap" style="display:none">
               <label class="fl">Proyecto (en ejecución)</label>
-              <select id="mProyecto"></select>
+              <select id="mProyecto" onchange="matProyectoChange()"></select>
+              <input id="mProyectoManual" placeholder="Escribe el nombre del proyecto" style="display:none;margin-top:8px" />
             </div>
           </div>
           <label class="fl" style="margin-top:12px">Artículos</label>
@@ -433,8 +434,14 @@ function matInit(){
   // proyectos en ejecución
   const activos=PROY.filter(p=>!isFin(p));
   const ps=document.getElementById('mProyecto');
-  ps.innerHTML='<option value="">— selecciona —</option>'+activos.map(p=>`<option value="${esc(p.id)}">${esc(p.nombre||pidText(p))}</option>`).join('');
+  ps.innerHTML='<option value="">— selecciona —</option>'+activos.map(p=>`<option value="${esc(p.id)}">${esc(p.nombre||pidText(p))}</option>`).join('')+'<option value="__manual__">✏️ Otro (escribir manualmente)</option>';
   renderMatHist();
+}
+function matProyectoChange(){
+  const manual=document.getElementById('mProyecto').value==='__manual__';
+  const inp=document.getElementById('mProyectoManual');
+  inp.style.display=manual?'block':'none';
+  if(manual)inp.focus(); else inp.value='';
 }
 function matSolicChange(){
   const t=(window.TECNICOS||[])[+document.getElementById('mSolic').value];
@@ -475,7 +482,13 @@ async function matEnviar(){
   }else{
     const ps=document.getElementById('mProyecto');const pid=ps.value;
     if(!pid){alert('Selecciona el proyecto.');return;}
-    destinoTxt='Proyecto '+ (ps.options[ps.selectedIndex].text); destinoRef=pid;
+    if(pid==='__manual__'){
+      const nombreManual=document.getElementById('mProyectoManual').value.trim();
+      if(!nombreManual){alert('Escribe el nombre del proyecto.');return;}
+      destinoTxt='Proyecto '+nombreManual; destinoRef=nombreManual;
+    }else{
+      destinoTxt='Proyecto '+ (ps.options[ps.selectedIndex].text); destinoRef=pid;
+    }
   }
   const payload={
     tipo:MAT_DESTINO,
@@ -484,7 +497,7 @@ async function matEnviar(){
     solicitante:t.nombre,
     correo:t.correo,
     patente:MAT_DESTINO==='camioneta'?document.getElementById('mPatente').value.trim():'',
-    proyecto:MAT_DESTINO==='proyecto'?(document.getElementById('mProyecto').options[document.getElementById('mProyecto').selectedIndex].text):'',
+    proyecto:MAT_DESTINO==='proyecto'?(document.getElementById('mProyecto').value==='__manual__'?document.getElementById('mProyectoManual').value.trim():document.getElementById('mProyecto').options[document.getElementById('mProyecto').selectedIndex].text):'',
     articulos:items,
     obs:document.getElementById('mObs').value.trim(),
     fecha:new Date().toLocaleString('es-CL')
@@ -516,6 +529,7 @@ async function matEnviar(){
       : '✅ Enviado'+(code?(' · '+code):'');
     msg.style.color='var(--green)';
     document.getElementById('mObs').value='';document.getElementById('mItems').innerHTML='';matAddItem();
+    document.getElementById('mProyectoManual').value='';document.getElementById('mProyectoManual').style.display='none';
     renderMatHist();
   }catch(e){
     msg.textContent='✗ '+(e.message||e);msg.style.color='var(--nc)';
