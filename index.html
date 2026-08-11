@@ -68,8 +68,13 @@
   .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;margin-top:8px}
   .legend span{display:inline-flex;align-items:center;gap:5px}
   .legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
-  .viewtabs{display:flex;gap:8px;margin-bottom:16px}
-  .vtab{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:8px}
+  .viewtabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+  .vtab{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 16px;font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:8px;flex:1 1 auto;justify-content:center;white-space:nowrap}
+  html,body{overflow-x:hidden}
+  @media (max-width:640px){
+    .viewtabs{gap:6px}
+    .vtab{flex:1 1 calc(50% - 6px);padding:10px 8px;font-size:13px}
+  }
   .fl{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:0 0 5px;text-transform:uppercase;letter-spacing:.03em}
   #matForm select,#matForm input,#matForm textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:14px;font-family:inherit;box-sizing:border-box}
   .mrow2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px;align-items:end}
@@ -286,7 +291,7 @@ window.FIREBASE_CONFIG = {
 window.SCM_ENDPOINT="https://script.google.com/macros/s/AKfycbxOu0BZBtw_BJdtlYs7lhU7fxGt6HC3jkFgPxQQ36ZNrBAMMsc5AoGXOZ2I6zl7u_Jmqw/exec";
 window.APP_SEGUIMIENTO_URL="https://si-safecard.github.io/SI-Safecard/"; // app SI-Safecard (Seguimiento)
 window.APP_RENDICION_URL="https://si-safecard.github.io/Rendicion-Safecard/"; // app Rendición de Gastos
-document.addEventListener('DOMContentLoaded',()=>{const a=document.getElementById('tabRendicion');if(a)a.href=window.APP_RENDICION_URL;});
+(function(){ const a=document.getElementById('tabRendicion'); if(a) a.href=window.APP_RENDICION_URL; })();
 window.GOOGLE_CLIENT_ID="722203246514-2ljn6due7pt0ihiv8d00ffmu2bbp0if8.apps.googleusercontent.com";
 /* Correos que pueden ver la pestaña FINALIZADOS (rentabilidad) */
 window.PANEL_FIN_VIEWERS=["ignacio.fuentes@safecard.cl","pablo.abarca@safecard.cl"];
