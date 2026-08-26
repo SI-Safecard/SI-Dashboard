@@ -79,15 +79,35 @@
     .vtab{flex:1 1 calc(50% - 6px);padding:10px 8px;font-size:13px}
   }
   .fl{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:0 0 5px;text-transform:uppercase;letter-spacing:.03em}
-  #matForm select,#matForm input,#matForm textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:14px;font-family:inherit;box-sizing:border-box}
+  .mat-layout{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;align-items:start}
+  @media (max-width:820px){ .mat-layout{grid-template-columns:1fr} }
+  #matForm select,#matForm input,#matForm textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:14px;font-family:inherit;box-sizing:border-box;transition:border-color .15s}
+  #matForm select:focus,#matForm input:focus,#matForm textarea:focus{outline:none;border-color:var(--or)}
   .mrow2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px;align-items:end}
   .segbtns{display:flex;gap:8px}
-  .seg{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:9px;font-weight:700;font-size:13px;color:var(--muted);cursor:pointer}
-  .seg.active{border-color:var(--or);background:var(--or-soft);color:var(--or-dark)}
-  .mitem{display:grid;grid-template-columns:1fr 90px 38px;gap:8px;margin-bottom:8px}
-  .mi-del{border:1px solid var(--line);background:#fff;border-radius:10px;cursor:pointer;color:var(--nc);font-weight:700}
-  .btn.ghost{background:#fff;border:1px dashed var(--or);color:var(--or-dark);border-radius:10px;padding:8px 14px;font-weight:700;cursor:pointer}
-  .mhrow{padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .seg{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:9px;font-weight:700;font-size:13px;color:var(--muted);cursor:pointer;transition:all .15s}
+  .seg:hover{border-color:var(--or)}
+  .seg.active{border-color:var(--or);background:var(--or-soft);color:var(--or-dark);box-shadow:0 1px 3px rgba(242,101,34,.15)}
+  .mitems-box{background:#FAFAFA;border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px}
+  .mitems-box:empty{display:none}
+  .mitem{display:grid;grid-template-columns:28px 1fr 90px 34px;gap:8px;align-items:center;margin-bottom:8px}
+  .mitem:last-child{margin-bottom:0}
+  .mitem .mi-num{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--or-soft);color:var(--or-dark);font-size:11px;font-weight:800}
+  .mi-del{border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;color:var(--nc);font-weight:700;width:34px;height:36px;transition:all .15s}
+  .mi-del:hover{background:#FEF2F2;border-color:var(--nc)}
+  .btn.ghost{background:#fff;border:1px dashed var(--or);color:var(--or-dark);border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer;width:100%;transition:all .15s}
+  .btn.ghost:hover{background:var(--or-soft)}
+  .btn.primary{background:var(--or);color:#fff;border:none;border-radius:10px;padding:11px 22px;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 2px 6px rgba(242,101,34,.3);transition:all .15s}
+  .btn.primary:hover{background:var(--or-dark);box-shadow:0 3px 10px rgba(242,101,34,.4)}
+  .btn.primary:disabled{opacity:.6;cursor:default;box-shadow:none}
+  .mat-badge{display:inline-flex;align-items:center;gap:5px;background:var(--or-soft);color:var(--or-dark);font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;margin-left:8px;vertical-align:middle;text-transform:none;letter-spacing:0}
+  .mhrow{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-size:13px;margin-bottom:8px;background:#fff;transition:box-shadow .15s}
+  .mhrow:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
+  .mhrow:last-child{margin-bottom:0}
+  .mhrow .mh-code{font-family:ui-monospace,Menlo,monospace;font-weight:800;color:var(--ink);background:#F3F4F6;border-radius:6px;padding:2px 7px;font-size:12px}
+  .mhrow .mh-dest{flex:1;font-weight:600;color:var(--ink)}
+  .mhrow .mh-dest .ico{margin-right:4px}
+  .mhrow .mh-meta{color:var(--muted);font-size:12px;text-align:right;white-space:nowrap}
   .vtab.active{background:var(--or);color:#fff;border-color:var(--or)}
   .vtab .cnt{font-size:12px;background:rgba(0,0,0,.12);padding:1px 8px;border-radius:999px}
   .vtab.active .cnt{background:rgba(255,255,255,.28)}
@@ -155,7 +175,8 @@
       <a class="vtab" href="#" id="tabRendicion" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">💰 Rendición de Gastos</a>
     </div>
     <div id="viewMat" style="display:none">
-      <div class="card" style="max-width:820px">
+      <div class="mat-layout">
+      <div class="card">
         <h2 style="margin:0 0 4px">📦 Solicitud de materiales</h2>
         <p class="sub" style="margin:0 0 14px">Genera una solicitud de stock. Se envía por correo a bodega y se registra en la planilla.</p>
         <div id="matForm">
@@ -180,21 +201,22 @@
               <input id="mProyectoManual" placeholder="Escribe el nombre del proyecto" style="display:none;margin-top:8px" />
             </div>
           </div>
-          <label class="fl" style="margin-top:12px">Artículos</label>
-          <div id="mItems"></div>
+          <label class="fl" style="margin-top:16px">Artículos <span class="mat-badge" id="mCount">0</span></label>
+          <div id="mItems" class="mitems-box"></div>
           <button type="button" class="btn ghost" onclick="matAddItem()">＋ Agregar artículo</button>
-          <label class="fl" style="margin-top:12px">Observación (opcional)</label>
+          <label class="fl" style="margin-top:16px">Observación (opcional)</label>
           <textarea id="mObs" rows="2" placeholder="Comentario para bodega…"></textarea>
-          <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
+          <div style="margin-top:16px;display:flex;gap:10px;align-items:center">
             <button type="button" class="btn primary" id="mSend" onclick="matEnviar()">📨 Enviar solicitud</button>
             <span id="mMsg" class="sub"></span>
           </div>
         </div>
         <datalist id="matList"></datalist>
       </div>
-      <div class="card" style="max-width:820px;margin-top:16px">
+      <div class="card" style="align-self:start">
         <h2 style="margin:0 0 10px">🕓 Últimas solicitudes</h2>
         <div id="matHist"><p class="sub">—</p></div>
+      </div>
       </div>
     </div>
 
@@ -487,10 +509,18 @@ function matDestino(d){
 function matAddItem(nombre,cant){
   const wrap=document.getElementById('mItems');
   const row=document.createElement('div');row.className='mitem';
-  row.innerHTML=`<input list="matList" class="mi-nom" placeholder="Escribe: UTP, Conector…" value="${esc(nombre||'')}">
+  row.innerHTML=`<span class="mi-num">${wrap.children.length+1}</span>
+    <input list="matList" class="mi-nom" placeholder="Escribe: UTP, Conector…" value="${esc(nombre||'')}">
     <input type="number" min="1" step="1" class="mi-cant" placeholder="Cant." value="${cant||''}">
-    <button type="button" class="mi-del" onclick="this.parentNode.remove()">✕</button>`;
+    <button type="button" class="mi-del" onclick="this.parentNode.remove();matRenumerar()">✕</button>`;
   wrap.appendChild(row);
+  matRenumerar();
+}
+function matRenumerar(){
+  const filas=document.querySelectorAll('#mItems .mitem');
+  filas.forEach((r,i)=>{ const n=r.querySelector('.mi-num'); if(n)n.textContent=i+1; });
+  const badge=document.getElementById('mCount');
+  if(badge)badge.textContent=filas.length;
 }
 function matItems(){
   return Array.from(document.querySelectorAll('#mItems .mitem')).map(r=>({
@@ -575,7 +605,11 @@ async function renderMatHist(){
   try{
     const list=await window.SafecardSolic.list();
     if(!list.length){c.innerHTML='<p class="sub">Sin solicitudes aún.</p>';return;}
-    c.innerHTML=list.slice(0,15).map(s=>`<div class="mhrow"><b>${esc(s.code||'—')}</b> · ${esc(s.destino||'')} · <span class="sub">${esc((s.articulos||[]).length)} art. · ${esc(s.fecha||'')}</span></div>`).join('');
+    c.innerHTML=list.slice(0,15).map(s=>{
+      const esCamioneta=/camioneta/i.test(s.destino||'');
+      const ico=esCamioneta?'🚚':'🏗️';
+      return `<div class="mhrow"><span class="mh-code">${esc(s.code||'—')}</span><span class="mh-dest"><span class="ico">${ico}</span>${esc(s.destino||'')}</span><span class="mh-meta">${esc((s.articulos||[]).length)} art. · ${esc(s.fecha||'')}</span></div>`;
+    }).join('');
   }catch(e){c.innerHTML='<p class="sub">—</p>';}
 }
 
