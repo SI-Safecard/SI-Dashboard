@@ -136,6 +136,9 @@
   .est-table-wrap tbody td{padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
   .est-table-wrap tbody tr:last-child td{border-bottom:none}
   .est-table-wrap td.wrap-txt{white-space:normal}
+  .pinsumo-sel{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 34px 9px 12px;font-size:13.5px;font-family:inherit;background:#fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6"><path d="M0 0l5 6 5-6z" fill="%236B7280"/></svg>') no-repeat right 12px center;appearance:none;-webkit-appearance:none;color:var(--ink);cursor:pointer;transition:border-color .15s;box-sizing:border-box}
+  .pinsumo-sel:hover{border-color:#C7CCD3}
+  .pinsumo-sel:focus{outline:none;border-color:var(--or);box-shadow:0 0 0 3px rgba(242,101,34,.12)}
   .vtab.active{background:var(--or);color:#fff;border-color:var(--or)}
   .vtab .cnt{font-size:12px;background:rgba(0,0,0,.12);padding:1px 8px;border-radius:999px}
   .vtab.active .cnt{background:rgba(255,255,255,.28)}
@@ -288,8 +291,8 @@
         <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--line)">
           <h3 class="est-h" style="margin:0 0 10px">📈 Tendencia y proyección de consumo</h3>
           <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:end;margin-bottom:12px">
-            <label class="fl" style="min-width:220px;flex:1 1 260px">Insumo a analizar
-              <select id="pInsumo" onchange="renderProyeccion()"></select>
+            <label class="fl" style="min-width:220px;flex:0 1 380px">Insumo a analizar
+              <select id="pInsumo" class="pinsumo-sel" onchange="renderProyeccion()"></select>
             </label>
             <div>
               <label class="fl">Vista</label>
