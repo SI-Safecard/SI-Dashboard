@@ -284,6 +284,28 @@
           <button class="btn-sec" onclick="estExportarCSV()">⬇️ Exportar CSV</button>
         </div>
         <div class="est-table-wrap" id="estTablaWrap"></div>
+
+        <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--line)">
+          <h3 class="est-h" style="margin:0 0 10px">📈 Tendencia y proyección de consumo</h3>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:end;margin-bottom:12px">
+            <label class="fl" style="min-width:220px;flex:1 1 260px">Insumo a analizar
+              <select id="pInsumo" onchange="renderProyeccion()"></select>
+            </label>
+            <div>
+              <label class="fl">Vista</label>
+              <div class="segbtns" id="pGranBtns">
+                <button type="button" class="seg active" data-g="m" onclick="setProyGran('m')">Mensual</button>
+                <button type="button" class="seg" data-g="q" onclick="setProyGran('q')">Trimestral</button>
+                <button type="button" class="seg" data-g="s" onclick="setProyGran('s')">Semestral</button>
+                <button type="button" class="seg" data-g="y" onclick="setProyGran('y')">Anual</button>
+              </div>
+            </div>
+          </div>
+          <p class="sub" id="pMsg" style="margin-bottom:10px">—</p>
+          <div class="est-kpis" id="pKpis"></div>
+          <div id="pChart" class="est-bars" style="max-height:none;margin-top:10px"></div>
+          <p class="sub" style="margin-top:10px;font-size:11.5px">🟧 Barra sólida = histórico real &nbsp;·&nbsp; 🟧 Barra rayada = proyección (estimación por tendencia lineal, calculada con todo el histórico disponible del insumo elegido, sin importar los filtros de fecha de arriba).</p>
+        </div>
       </div>
     </div>
 
@@ -682,6 +704,7 @@ async function cargarEstadisticas(){
     if(!data||!data.ok)throw new Error((data&&data.error)||'Respuesta inválida');
     EST_ROWS=(data.rows||[]).map(r=>Object.assign({},r,{mes:(r.fecha||'').slice(0,7)}));
     llenarFiltrosEst();renderEst();
+    estLlenarProyeccion();renderProyeccion();
     msg.textContent=EST_ROWS.length+' líneas de material cargadas.';
   }catch(e){msg.textContent='No se pudo cargar: '+(e.message||e)+' (revisa que el Apps Script esté reimplementado).';}
 }
@@ -803,6 +826,103 @@ function renderEst(){
   Object.entries(equipoMapa).forEach(([k,v])=>{ equipoMapaNombres[estNombreEquipo(k)]=(equipoMapaNombres[estNombreEquipo(k)]||0)+v; });
   document.getElementById('estBarEquipo').innerHTML=estBarrasHTML(equipoMapaNombres,'#2563EB',15);
   estRenderTabla(rows);
+}
+/* ===== TENDENCIA Y PROYECCIÓN (mensual/trimestral/semestral/anual) ===== */
+let PROY_GRAN='m';
+function estLlenarProyeccion(){
+  const sel=document.getElementById('pInsumo');const cur=sel.value;
+  sel.innerHTML='<option value="">Todos los insumos</option>'+estUniq(EST_ROWS.map(r=>r.insumo)).map(v=>`<option>${esc(v)}</option>`).join('');
+  if(cur && Array.from(sel.options).some(o=>o.value===cur))sel.value=cur;
+}
+function setProyGran(g){
+  PROY_GRAN=g;
+  document.querySelectorAll('#pGranBtns .seg').forEach(b=>b.classList.toggle('active',b.dataset.g===g));
+  renderProyeccion();
+}
+function ymFromFecha(f){return (f||'').slice(0,7);}
+function addMonths(ym,n){
+  const p=ym.split('-');const y=+p[0],m=+p[1];
+  const d=new Date(y,m-1+n,1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+const MESES_ES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function monthLabel(ym){const p=ym.split('-');return MESES_ES[(+p[1])-1]+' '+p[0];}
+function serieMensualContinua(rows){
+  const mapa={};
+  rows.forEach(r=>{const ym=ymFromFecha(r.fecha);if(!ym)return;mapa[ym]=(mapa[ym]||0)+(+r.cantidad||0);});
+  const keys=Object.keys(mapa).sort();
+  if(!keys.length)return[];
+  const out=[];let cur=keys[0];const last=keys[keys.length-1];
+  while(cur<=last){out.push({ym:cur,cantidad:mapa[cur]||0});cur=addMonths(cur,1);}
+  return out;
+}
+function regresionLineal(vals){
+  const n=vals.length;if(n<2)return{slope:0,intercept:vals[0]||0};
+  let sx=0,sy=0,sxy=0,sxx=0;
+  vals.forEach((v,i)=>{sx+=i;sy+=v;sxy+=i*v;sxx+=i*i;});
+  const denom=(n*sxx-sx*sx);
+  if(denom===0)return{slope:0,intercept:sy/n};
+  const slope=(n*sxy-sx*sy)/denom;
+  return{slope,intercept:(sy-slope*sx)/n};
+}
+function periodoKey(ym,gran){
+  const p=ym.split('-');const y=+p[0],m=+p[1];
+  if(gran==='m')return ym;
+  if(gran==='q')return y+'-T'+(Math.floor((m-1)/3)+1);
+  if(gran==='s')return y+'-S'+(m<=6?1:2);
+  return String(y);
+}
+function periodoLabel(key,gran){
+  if(gran==='m')return monthLabel(key);
+  return key.replace('-T',' T').replace('-S',' S');
+}
+function agruparPeriodo(entradas,gran){
+  const mapa={};
+  entradas.forEach(e=>{
+    const k=periodoKey(e.ym,gran);
+    if(!mapa[k])mapa[k]={cantidad:0,proj:e.proj,orden:k};
+    mapa[k].cantidad+=e.cantidad;
+  });
+  return Object.keys(mapa).sort().map(k=>({key:k,label:periodoLabel(k,gran),cantidad:Math.round(mapa[k].cantidad),proj:mapa[k].proj}));
+}
+function renderProyeccion(){
+  const kpis=document.getElementById('pKpis'),chart=document.getElementById('pChart'),msg=document.getElementById('pMsg');
+  if(!kpis||!chart||!msg)return;
+  const insumo=document.getElementById('pInsumo').value;
+  const rows=insumo?EST_ROWS.filter(r=>r.insumo===insumo):EST_ROWS;
+  const serie=serieMensualContinua(rows);
+  if(serie.length<2){
+    msg.textContent='Aún no hay histórico suficiente para proyectar (se necesitan al menos 2 meses con datos'+(insumo?' de "'+insumo+'"':'')+').';
+    chart.innerHTML='';kpis.innerHTML='';return;
+  }
+  msg.textContent=serie.length+' meses de histórico: '+monthLabel(serie[0].ym)+' → '+monthLabel(serie[serie.length-1].ym)+(insumo?(' · Insumo: '+insumo):' · Todos los insumos');
+  const reg=regresionLineal(serie.map(s=>s.cantidad));
+  const nextYear=new Date().getFullYear()+1;
+  const proyMeses=[];
+  for(let m=1;m<=12;m++){
+    const ym=nextYear+'-'+String(m).padStart(2,'0');
+    let idx=0,cur=serie[0].ym;while(cur<ym){idx++;cur=addMonths(cur,1);}
+    proyMeses.push({ym,cantidad:Math.max(0,Math.round(reg.intercept+reg.slope*idx)),proj:true});
+  }
+  const histEnt=serie.map(s=>({ym:s.ym,cantidad:s.cantidad,proj:false}));
+  const histAgr=agruparPeriodo(histEnt,PROY_GRAN);
+  const proyAgr=agruparPeriodo(proyMeses,PROY_GRAN);
+  const totalProyAnual=proyMeses.reduce((a,e)=>a+e.cantidad,0);
+  const promedioMensualProy=Math.round(totalProyAnual/12);
+  const ultimos12=serie.slice(-12).reduce((a,e)=>a+e.cantidad,0);
+  const variacion=ultimos12>0?Math.round((totalProyAnual-ultimos12)/ultimos12*100):null;
+  kpis.innerHTML=
+    `<div class="est-kpi"><div class="v">${totalProyAnual.toLocaleString('es-CL')}</div><div class="l">Proyección ${nextYear} (total)</div></div>`+
+    `<div class="est-kpi"><div class="v">${promedioMensualProy.toLocaleString('es-CL')}</div><div class="l">Promedio mensual proyectado</div></div>`+
+    `<div class="est-kpi"><div class="v">${ultimos12.toLocaleString('es-CL')}</div><div class="l">Últimos 12 meses reales</div></div>`+
+    `<div class="est-kpi"><div class="v" style="color:${variacion==null?'var(--ink)':(variacion>=0?'var(--green)':'var(--nc)')}">${variacion==null?'—':(variacion>0?'+':'')+variacion+'%'}</div><div class="l">Variación vs. últimos 12m</div></div>`;
+  const todos=histAgr.concat(proyAgr);
+  const max=Math.max.apply(null,todos.map(e=>e.cantidad))||1;
+  chart.innerHTML=todos.map(e=>{
+    const pct=Math.round(e.cantidad/max*100);
+    const bg=e.proj?'repeating-linear-gradient(45deg,var(--or) 0 6px,#FBD9C2 6px 12px)':'var(--or)';
+    return `<div class="bar-row"><span class="bn" title="${esc(e.label)}">${esc(e.label)}${e.proj?' <small style="color:var(--muted);font-weight:600">(proy.)</small>':''}</span><div class="bt"><span style="width:${pct}%;background:${bg}"></span></div><span class="bv">${e.cantidad.toLocaleString('es-CL')}</span></div>`;
+  }).join('');
 }
 async function renderMatHist(){
   const c=document.getElementById('matHist');if(!c)return;
