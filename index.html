@@ -82,8 +82,12 @@
   .fl{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:0 0 5px;text-transform:uppercase;letter-spacing:.03em}
   .mat-layout{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;align-items:start}
   @media (max-width:820px){ .mat-layout{grid-template-columns:1fr} }
-  #matForm select,#matForm input,#matForm textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:14px;font-family:inherit;box-sizing:border-box;transition:border-color .15s}
-  #matForm select:focus,#matForm input:focus,#matForm textarea:focus{outline:none;border-color:var(--or)}
+  #matForm select,#matForm input,#matForm textarea,
+  .solicitud-form select,.solicitud-form input,.solicitud-form textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:14px;font-family:inherit;box-sizing:border-box;transition:border-color .15s,box-shadow .15s;background:#fff}
+  #matForm select,.solicitud-form select{padding-right:34px;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6"><path d="M0 0l5 6 5-6z" fill="%236B7280"/></svg>');background-repeat:no-repeat;background-position:right 12px center;appearance:none;-webkit-appearance:none;cursor:pointer}
+  #matForm select:hover,.solicitud-form select:hover{border-color:#C7CCD3}
+  #matForm select:focus,#matForm input:focus,#matForm textarea:focus,
+  .solicitud-form select:focus,.solicitud-form input:focus,.solicitud-form textarea:focus{outline:none;border-color:var(--or);box-shadow:0 0 0 3px rgba(242,101,34,.12)}
   .mrow2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px;align-items:end}
   .segbtns{display:flex;gap:8px}
   .seg{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:9px;font-weight:700;font-size:13px;color:var(--muted);cursor:pointer;transition:all .15s}
@@ -110,7 +114,10 @@
   .mhrow .mh-dest .ico{margin-right:4px}
   .mhrow .mh-meta{color:var(--muted);font-size:12px;text-align:right;white-space:nowrap}
   .est-filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:6px 0 16px}
-  .est-filtros select,.est-filtros input{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px;font-size:13px;font-family:inherit;margin-top:4px;box-sizing:border-box}
+  .est-filtros select,.est-filtros input{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px;font-size:13px;font-family:inherit;margin-top:4px;box-sizing:border-box;transition:border-color .15s,box-shadow .15s;background:#fff}
+  .est-filtros select{padding-right:30px;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6"><path d="M0 0l5 6 5-6z" fill="%236B7280"/></svg>');background-repeat:no-repeat;background-position:right 10px center;appearance:none;-webkit-appearance:none;cursor:pointer}
+  .est-filtros select:hover{border-color:#C7CCD3}
+  .est-filtros select:focus,.est-filtros input:focus{outline:none;border-color:var(--or);box-shadow:0 0 0 3px rgba(242,101,34,.12)}
   @media (max-width:560px){.est-filtros{grid-template-columns:repeat(2,1fr)}}
   .est-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
   @media (max-width:560px){.est-kpis{grid-template-columns:repeat(2,1fr)}}
@@ -442,6 +449,24 @@ window.TECNICOS=[
   {correo:"fabian.pavez@safecard.cl",     nombre:"Fabián Pávez",     patente:"VLJY12",  rol:"jefe"},
   {correo:"ignacio.fuentes@safecard.cl",  nombre:"Ignacio Fuentes",  patente:"",        rol:"admin"},
   {correo:"pablo.abarca@safecard.cl",     nombre:"Pablo Abarca",     patente:"",        rol:"admin"}
+];
+/* Equipo completo (mismo listado que "responsable" en Rendición de Gastos) — usado para
+   Solicitante en EPP, Herramientas y Permisos, ya que cualquier técnico puede pedirlos,
+   no solo los jefes de cuadrilla con camioneta asignada.
+   ⚠️ Los correos de los 6 nuevos (Ciro, Ariel, Jhon, Sebastián, Pedro, Matías) se
+   infirieron con el mismo patrón nombre.apellido@safecard.cl — confírmalos o corrígelos. */
+window.TECNICOS_TODOS=[
+  {correo:"francisco.morales@safecard.cl", nombre:"Francisco Morales"},
+  {correo:"ciro.forte@safecard.cl",        nombre:"Ciro Forte"},
+  {correo:"ariel.lazo@safecard.cl",        nombre:"Ariel Lazo"},
+  {correo:"jhon.villegas@safecard.cl",     nombre:"Jhon Villegas"},
+  {correo:"sebastian.espinoza@safecard.cl",nombre:"Sebastian Espinoza"},
+  {correo:"pedro.rivera@safecard.cl",      nombre:"Pedro Rivera"},
+  {correo:"matias.silva@safecard.cl",      nombre:"Matias Silva"},
+  {correo:"fabian.pavez@safecard.cl",      nombre:"Fabián Pávez"},
+  {correo:"nicolas.jara@safecard.cl",      nombre:"Nicolás Jara"},
+  {correo:"pablo.abarca@safecard.cl",      nombre:"Pablo Abarca"},
+  {correo:"ignacio.fuentes@safecard.cl",   nombre:"Ignacio Fuentes"}
 ];
 window.MATERIALES=["200mt 1-Fibra LC-LC MonoModo", "500MT 1-FIBRA LC-LC MONOMODO", "ADAPTADOR SPLITTER POE 24V A 12V", "ADHESIVO VINILIT PVC POTE 240CC CON PINCEL", "Abrazadera Omega Metal 20 mm", "Abrazadera Omega Metal 25 mm", "Abrazadera Omega Metal 32 mm", "Abrazadera Tornillo / metal 20 mm", "Abrazadera caddy Click 20-25 mm", "Acrilico Isafe vehicular 4 perforaciones Esquina", "Acrilico Isafe vehicular doble fast", "Acrílico integración SAFETOUCH para Isafe vehicular", "Antena 3G LTAP-MINI-LTE-KIT", "Antena Punto a Punto LOCO5AC", "Antena Sectorial LITE AP-AC-LAP120", "Antena UAP-AC-M", "Antena WAP-AC MIKROTIK", "Antena mAP MIKROTIK ROUTERBOARD", "Armario Metálico 600x400x250 Ekoline", "Armario metálico 250x200x150 ekoline", "Armario metálico 300x250x150 ekoline", "Automático Monofásico 1 x 10A", "Automático Monofásico 1 x 16A", "BROCA PARA METAL HSS 6,0 MM", "BROCA SDS 10\" concreto", "Backup MiniPC y Switch (ART COMP)", "Bandeja 10\" Rack", "Bandeja para Rack 19\"", "Barrera SKidata 3.6 GB (ART COMP)", "Barrera SKidata 3.6 N (ART COMP)", "Barrera SKidata 3GB (ART COMP)", "Barrera SKidata 3GB ARTICULADA (ART COMP)", "Barrera SKidata 3N (ART COMP)", "Barrera SKidata 3N ARTICULADA (ART COMP)", "Barrera Skidata (GB) 3.0m", "Barrera Skidata (GB) 3.6m", "Barrera Skidata (N) 3,0m", "Barrera Skidata (N) 3,6m", "Barrera Skidata Articulada GB", "Barrera Skidata Articulada N.", "Barrera ZK Teco ProBG3060L 6M (ART COMP)", "Barrera ZK Teco ProBG3060R 6M (ART COMP)", "Barrera ZKTeco ARTICULADA PROBG3130L-LED 3M", "Barrera ZKTeco ARTICULADA PROBG3130R-LED 3M", "Barrera ZKTeco PROGB3030R", "Barrera ZKTeco ProBG 6M R", "Barrera ZKTeco ProBG3030L", "Barrera ZKTeco ProBG3030R 3M (ART COMP)", "Barrera ZKTeco ProBG3045L 4.5M", "Barrera ZKTeco ProBG3045L 4.5M (ART COMP)", "Barrera ZKTeco ProBG3045R 4.5M", "Barrera ZKTeco ProBG3045R 4.5M (ART COMP)", "Barrera ZKTeco ProBG3060L 6L", "Barrera ZKTeco ProGB3030L 3M (ART COMP)", "Barrera ZKteco Articulada LED 3M (ART COMP)", "Boton de Emergencia", "Botonera de  Emergencia SG (ART COMP)", "Brazo Torniquete  Dimension: 500*38(mm)", "Broca Concreto 10\"", "Broca Concreto 6\"", "Broca Concreto 8\"", "Broca SDS 10mm Metal", "Broca SDS 8mm x 110mm", "Broca SDS concreto 6mm x 110mm", "CABLE PODER PC 1,8MT", "CAMARA HIKVISION (ART COMP)", "CARTUCHO GAS 190 GRS TOP SAFE PROVIDUS", "Cable Eva 1,5 mm libre de halogeno Blanco", "Cable Eva 1,5 mm libre de halogeno Rojo", "Cable Eva 1.5 mm libre de halogeno Verde", "Cable Eva 2,5 mm libre de halogeno Blanco", "Cable Eva 2,5 mm libre de halogeno Rojo", "Cable Eva 2,5 mm libre de halogeno Verde", "Cable Eva 4 mm libre de halogeno Blanco", "Cable Eva 4 mm libre de halogeno Rojo", "Cable Eva 4 mm libre de halogeno Verde", "Cable Gris CAT6 UTP 305 Mt", "Cable auxiliar 2 mt (parlante citofonia)", "Caja Botonera de Emergencia de PVC (1 perforación 22mm Ip55)", "Caja Estanca Metalica 200x200", "Caja TB Controlador Genérico", "Caja estanca 100x100x65 metalica", "Caja estanca 100x65x65 metalica", "Caja estanca plástica 90x90", "Caja plastica DRL 100x100", "Canaleta Blanca DLP 40x16", "Canaleta DLP Blanca 100x50", "Canaleta blanca 20x12,5 mm C/Tapa", "Cap Lite", "Carcasa Faceid", "Carcasa Isafe wall", "Carcasa SAFETOUCH exterior visera larga", "Carcasa SafeTouch interior 3D", "Carcasa isafe vehicular", "Carcasas SAFETOUCH interior visera corta", "Circuito 220v EVA 1.5 mm (ART COMP)", "Circuito 220v EVA 2.5 mm (ART COMP)", "Citofonia PCG - Kensington (ART COMP)", "Citofonia PCG - Logitech (ART COMP)", "Combo Teclado Mouse USB KLASS Español - KB6721BK", "Conector RJ45 cat5 macho blindado UBIQUITI 100UNIDS.", "Conector Recto 20 mm P/Flexible Metálico", "Conector Recto 25 mm P/Flexible Metálico", "Conector Recto 32mm P/Flexible Metálico", "Conector de Derivacion 12-10", "Controlador Generico conector XBEE", "Controladora Barrera SKD (ART COMP)", "Conversor DC-DC", "Copla EMT 20 mm", "Copla EMT 25 mm", "Copla RJ45-CP6S Blindado", "CÁMARA DAHUA (ART COMP)", "CÁMARA QR LV3000H", "Cámara LPR HIKVISION", "Cámara LPR Quercus", "Cámara LPR Quercus Motorizada (ART COMP)", "Cámara QR EP3000Y", "Cámara Qr RD4500R, puerto RS232 / USB", "Cámara Smart ANPR DAHUA", "Cámara Web Kensington W2000", "Cámara Web Logitech Citofonía", "DS7100H Speedgate DA Doble (ART COMP)", "DS7100H Speedgate DA Simple (ART COMP)", "DS7100H Speedgate Doble Altura", "DS7100H Speedgate Simple Altura", "Destornillador Paleta Perno Fusible SKIDATA", "Destornillador para pernos fusibles alternativos SK (Paveway)", "Disco Diamantado 4.5\"", "Disco Diamantado 7\" Segmentado", "Disco Diamantado 9\" Continuo", "Disco de corte 4,5'", "Disipador Controladora SKD", "FACE ID (ART COMP)", "FACE ID Pedestal (ART COMP)", "FACE ID/VP Muro (ART COMP)", "FACE ID/VP vehicular Curvo (ART COMP)", "FACE ID/VP vehicular Recto (ART COMP)", "Face ID EASCO 8\" Muro", "Face ID EASCO 8\" Pedestal", "Face Recognition DAHUA", "Fuente de Poder LPV-100-24", "Fuente de poder MDR-60-24V", "Fuentes de poder MDR-60-12V", "GABINETE CENTRAL (ART COMP)", "GABINETE CENTRAL + 3G  (ART COMP)", "GABINETE CENTRAL c/ SW8 (ART COMP)", "Generico Apertura 2R (ART COMP)", "Genericos Apertura 4R (ART COMP)", "Genericos Apertura 8R (ART COMP)", "Golilla Corriente 3/8", "Guias Sierra copa 22-27MM", "Guias Sierra copa 32MM", "Hoja Sierra", "Huincha Aisladora Negra 3M 165", "Huincha de Goma autofundente", "Inyector poe 172 planet", "Isafe Vehicular V.1 (ART COMP)", "Isafe Vehicular c/Safetouch (ART COMP)", "Isafe Wall (ART COMP)", "Lector Tarjeta MIFARE USB ACR1281U-C2", "Letrero Residentes", "Letrero Un Auto a la Vez", "Letrero Visitas", "Loops", "MODULO RJ45 SFP S-RJ01", "Mini PC / local server", "Mini UPS DC140 usb FORZA", "OCR Mesón 315-E", "PANTALLA FT 801 / VM801B43A-BK Capacitiva", "PANTALLA FT800 / vm800B43A-BK Resistiva", "PCB Genérico", "PCG PC de guardia 3NStar", "PCG c/OCR mesón (ART COMP)", "PCG c/Pistola (ART COMP)", "PDU ENCHUFES HEMBRA Gabinete 10\"", "PILARES CAMARA LPR", "PILARES CAMARA QUERCUS", "PILOTO-LED AMARILLO LUZ PILOTO LED 220VAC 20MM- Luz piloto amarillo", "PILOTO-LED AZUL LUZ PILOTO LED 220VAC 20MM- Luz piloto azul", "PILOTO-LED BLANCA LUZ PILOTO LED 220VAC 20MM- Luz piloto blanca", "PILOTO-LED ROJO LUZ PILOTO LED 220VAC 20MM- Luz piloto rojo", "PILOTO-LED VERDE LUZ PILOTO LED 220VAC 20MM- Luz piloto verde", "PLACA RELE 8CH", "PLUMA ACC LIMITED 3.6 MT", "PLUMA ACC.LIMITED 3.0 MT", "PLUMA ACC.LIMITED 4.0 MT", "PLUMA ACC.LIMITED 4.5 MT", "PLUMA ACC.LIMITED GB 3.0 MT", "PLUMA BARRERA 3 MOOVI ORIGINAL BFT DE 3 MTS", "POE FACE ID EASCO", "Parlante citofonia", "Pedestal Face ID DAHUA", "Pernos Fusibles Skidata", "Pernos de anclaje 5 3/8", "Pernos fusibles Paveway", "Pilar CURVO Safetouch 1,60 mts", "Pilar Curvo safetouch vehicular", "Pilar Doble para SafeTouch Vehicular", "Pilar RECTO Safetouch 1,60 mts", "Pilar Triple para SafeTouch Vehicular", "Pilares rectos para safetouch", "Pistola OCR Honeywell 1960G", "Placa rele 2CH", "Placa rele 4CH", "Pluma AC Barrier Gate Boom 4,5M", "Pluma AC-Barrier.Gate-Boom 3,6 GB Skidata", "Pluma AC-Barrier.Gate-Boom 3,6 Skidata", "Pluma Skidata iluminada RGB - Normal 3.6 mt", "Pluma ZKTECO 3mt", "Pluma ZKTECO 4,5mt", "Pluma ZKTECO 4.5mt con LED", "Pluma ZKTECO 6 mt", "Pluma ZKTECO 6.0 mt con LED", "Pluma articulada Skidata", "Plumas AC - Barrier.Gate - Boom 3,0m Skidata", "Puerta Minusvalidos (ART COMP)", "RACK negro 1004 Linkmade", "RACK negro 1006 Linkmade", "Regulador de voltaje 600W / 181-274V TRIPPLITE", "Rele con Retardo", "Router HEX-S Mikrotik", "SAFETOUCH ACCESO EXT (ART COMP)", "SAFETOUCH ACCESO EXT 3D (ART COMP)", "SAFETOUCH ACCESO INT (ART COMP)", "SAFETOUCH ACCESO INT 3D (ART COMP)", "SAFETOUCH VEHICULAR CURVO (ART COMP)", "SAFETOUCH VEHICULAR CURVO 1,60 mt (ART COMP)", "SAFETOUCH VEHICULAR PILAR DOBLE (ART COMP)", "SAFETOUCH VEHICULAR PILAR TRIPLE (ART COMP)", "SAFETOUCH VEHICULAR RECTO (ART COMP)", "SAFETOUCH VEHICULAR RECTO 1,60 mt (ART COMP)", "SFP fibra PAR-WDM-BIDI SM 1GBPS", "SIERRA COPA Bi metal 32 MM", "Safetouch (ART COMP)", "Safetouch pantalla DW200", "Sensor barrera VR 10 ZK", "Sierra Copa Bi metal 22mm", "Sierra Copa Bi metal 27mm", "Silicona acrilica gris", "Soporte Antena para muro / 50 cm", "Soportes para fijación de switch y transformador", "SpeedGate Daosafe DS 212 Doble", "SpeedGate Daosafe DS 212 Single", "SpeedGate Daosafe DS 212 doble (ART COMP)", "SpeedGate Daosafe DS 212 simple (ART COMP)", "Speedgate H306 Simple", "Speedgate Nebula (ART COMP)", "Springsets GB", "Sprinset Normal", "Switch 4 RB260GSP", "Switch POE 4P (ART COMP)", "Switch POE 8P (ART COMP)", "Switch de 8 Mikrotik", "TARJETA DE GUARDIA", "TORNILLO VOLCANITA NEGRO PUNTA FINA 6x1 1/4", "TUBO CONDUIT PVC 20 mm", "TUBO CONDUIT PVC 25mm", "TUBO EMT 20mm 3MT", "TUBO EMT 25mm 3MT", "Tablet Zebra", "Tarjeta Generica RELE 4", "Tarjeta Genérica RELE 2", "Tarjeta Genérica RELE 8", "Tarjeta Isafe V2", "Tarjeta de memoria LPR", "Tarugo de nylon con tope M6 100 unidades", "Tarugo paloma volcanita 6mm 100 un", "Terminal EMT 20mm", "Terminal EMT 25mm", "Tornillo Cabeza Lenteja  8 X 1/2 Punta Broca (100UN)", "Tornillo Hexagonal 1-1/4", "Tornillo Lenteja 8 X 1 1/4 P.Broca", "Tornillo Lenteja 8 X 1 1/4 P.fina", "Tornillo p.fina 6x1 1/4", "Torniquete DS-112", "Torniquete Estadio DS-411 (ART COMP)", "Torniquete H106", "Torniquete Minusválidos Zkteco", "Torniquete Nebula Z310 \"Fierro\"", "Torniquete Nébula Z310 \"acrílico\"", "Torniquete Safecard DS-112 (ART COMP)", "Transformador 48V FACE ID", "Tubo Conduit PVC 32mm", "Tubo Flexible Metalico 20 mm", "Tubo Flexible Metalico 25 mm", "UPS FORZA 600VA", "VIDEO PORTERO DS-KD9633-WBE6 HIKVISION", "Visera Wall - Inoxidable"];
 window.EPP_ITEMS=["Linterna led recargable", "Guantes presición", "Guantes de construccion", "Guantes para soldar", "Guantes para tablero electrico", "Antiparras transparente", "Antiparras oscuras", "Protector auditivo", "Polainas de cuero", "Mascara de soldar", "Bloqueador solar", "Faja", "Rodillera", "Gorro Legionario", "Chaleco geologo reflectante"];
@@ -809,7 +834,8 @@ function pieSVG(contId,mapa){
   el.innerHTML=`<div class="pie-wrap"><svg viewBox="0 0 220 220" class="pie-svg">${paths}</svg><div class="pie-legend">${legend}</div></div>`;
 }
 function estNombreEquipo(correo){
-  const t=(window.TECNICOS||[]).find(x=>(x.correo||'').toLowerCase()===(correo||'').toLowerCase());
+  const todos=(window.TECNICOS||[]).concat(window.TECNICOS_TODOS||[]);
+  const t=todos.find(x=>(x.correo||'').toLowerCase()===(correo||'').toLowerCase());
   return t?t.nombre+(t.patente?(' / '+t.patente):''):(correo||'—');
 }
 function estBarrasHTML(mapa,color,limit){
@@ -1761,28 +1787,10 @@ function htmlModuloListado(cfg){
     <div class="card">
       <h2 style="margin:0 0 4px">${cfg.icon} Solicitud de ${cfg.catLabel}</h2>
       <p class="sub" style="margin:0 0 14px">Genera una solicitud de ${cfg.catLabel.toLowerCase()}. Se envía por correo a bodega y se registra en la planilla.</p>
-      <div>
-        <label class="fl">Solicitante</label>
+      <div class="solicitud-form">
+        <label class="fl">Solicitante (técnico)</label>
         <select id="${ns}Solic"></select>
         <div id="${ns}CorreoAviso" style="display:none;margin-top:6px;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600"></div>
-        <div class="mrow2">
-          <div>
-            <label class="fl">Destino</label>
-            <div class="segbtns">
-              <button type="button" class="seg active" id="${ns}SegVeh">🚚 Para camioneta</button>
-              <button type="button" class="seg" id="${ns}SegProj">🏗️ Para proyecto</button>
-            </div>
-          </div>
-          <div id="${ns}VehWrap">
-            <label class="fl">Camioneta (patente)</label>
-            <input id="${ns}Patente" placeholder="Patente" />
-          </div>
-          <div id="${ns}ProjWrap" style="display:none">
-            <label class="fl">Proyecto (en ejecución)</label>
-            <select id="${ns}Proyecto"></select>
-            <input id="${ns}ProyectoManual" placeholder="Escribe el nombre del proyecto" style="display:none;margin-top:8px" />
-          </div>
-        </div>
         <label class="fl" style="margin-top:16px">Artículos <span class="mat-badge" id="${ns}Count">0</span></label>
         <div id="${ns}Items" class="mitems-box"></div>
         <button type="button" class="btn ghost" id="${ns}AddItem">＋ Agregar artículo</button>
@@ -1812,10 +1820,7 @@ function htmlModuloListado(cfg){
     <p class="sub" id="${ns}EstMsg" style="margin:6px 0 14px">—</p>
     <div class="est-filtros">
       <label class="fl">Insumo<select id="${ns}FInsumo"></select></label>
-      <label class="fl">Proyecto<select id="${ns}FProy"></select></label>
-      <label class="fl">Camioneta<select id="${ns}FCam"></select></label>
-      <label class="fl">Equipo / Solicitante<select id="${ns}FCorreo"></select></label>
-      <label class="fl">Destino<select id="${ns}FDestino"><option value="">Todos</option><option value="proyecto">Proyecto</option><option value="camioneta">Camioneta</option></select></label>
+      <label class="fl">Técnico<select id="${ns}FCorreo"></select></label>
       <label class="fl">Fecha desde<input type="date" id="${ns}FDesde"></label>
       <label class="fl">Fecha hasta<input type="date" id="${ns}FHasta"></label>
       <label class="fl" style="align-self:end"><button class="btn-sec" style="width:100%" id="${ns}Limpiar">✕ Limpiar filtros</button></label>
@@ -1823,10 +1828,8 @@ function htmlModuloListado(cfg){
     <div class="est-kpis" id="${ns}EstKpis"></div>
     <h3 class="est-h">🥧 Distribución de cantidad por insumo</h3>
     <div id="${ns}EstPie"></div>
-    <div class="est-charts-grid">
-      <div><h3 class="est-h">🏗️ Cantidad por proyecto</h3><div id="${ns}BarProy" class="est-bars"></div></div>
-      <div><h3 class="est-h">🚚 Cantidad por camioneta / equipo</h3><div id="${ns}BarEquipo" class="est-bars"></div></div>
-    </div>
+    <h3 class="est-h" style="margin-top:18px">🧑‍🔧 Cantidad por técnico</h3>
+    <div id="${ns}BarEquipo" class="est-bars"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:18px">
       <h3 class="est-h" style="margin:0">📋 Detalle <span id="${ns}TablaCount" class="mat-badge">0</span></h3>
       <button class="btn-sec" id="${ns}ExportarCSV">⬇️ Exportar CSV</button>
@@ -1857,18 +1860,15 @@ function htmlModuloListado(cfg){
 
 function crearModuloListado(cfg){
   const ns=cfg.ns;
-  let ready=false, destino='camioneta', estRows=[], proyGran='m', ultimaFiltrada=[];
+  let ready=false, estRows=[], proyGran='m', ultimaFiltrada=[];
   const $=id=>document.getElementById(ns+id);
 
   function init(){
     if(ready){ renderHist(); return; }
     document.getElementById(cfg.containerId).innerHTML=htmlModuloListado(cfg);
     $('List').innerHTML=(window[cfg.itemsVar]||[]).map(m=>`<option value="${esc(m)}">`).join('');
-    $('Solic').innerHTML='<option value="">— selecciona —</option>'+(window.TECNICOS||[]).map((t,i)=>`<option value="${i}">${esc(t.nombre)}${t.patente?(' / '+esc(t.patente)):''}</option>`).join('');
+    $('Solic').innerHTML='<option value="">— selecciona —</option>'+((window.TECNICOS_TODOS||window.TECNICOS||[])).map((t,i)=>`<option value="${i}">${esc(t.nombre)}</option>`).join('');
     $('Solic').addEventListener('change',solicChange);
-    $('SegVeh').addEventListener('click',()=>setDestino('camioneta'));
-    $('SegProj').addEventListener('click',()=>setDestino('proyecto'));
-    $('Proyecto').addEventListener('change',proyectoChange);
     $('AddItem').addEventListener('click',()=>addItem());
     $('Send').addEventListener('click',enviar);
     $('AbrirEst').addEventListener('click',abrirEstadisticas);
@@ -1876,28 +1876,15 @@ function crearModuloListado(cfg){
     $('Cerrar').addEventListener('click',()=>{$('EstWrap').style.display='none';});
     $('Limpiar').addEventListener('click',limpiarFiltros);
     $('ExportarCSV').addEventListener('click',exportarCSV);
-    ['FInsumo','FProy','FCam','FCorreo','FDestino','FDesde','FHasta'].forEach(id=>$(id).addEventListener('change',renderEst));
+    ['FInsumo','FCorreo','FDesde','FHasta'].forEach(id=>$(id).addEventListener('change',renderEst));
     $('PInsumo').addEventListener('change',renderProyeccion);
     document.querySelectorAll('#'+ns+'PGranBtns .seg').forEach(b=>b.addEventListener('click',()=>setGran(b.dataset.g)));
     addItem();
     ready=true;
-    poblarProyectos();
     renderHist();
   }
-  function poblarProyectos(){
-    const activos=(window.PROY||[]).filter(p=>!isFin(p));
-    const ps=$('Proyecto');
-    ps.innerHTML='<option value="">— selecciona —</option>'+activos.map(p=>`<option value="${esc(p.id)}">${esc(p.nombre||pidText(p))}</option>`).join('')+'<option value="__manual__">✏️ Otro (escribir manualmente)</option>';
-  }
-  function proyectoChange(){
-    const manual=$('Proyecto').value==='__manual__';
-    const inp=$('ProyectoManual');
-    inp.style.display=manual?'block':'none';
-    if(manual)inp.focus(); else inp.value='';
-  }
   function solicChange(){
-    const t=(window.TECNICOS||[])[+$('Solic').value];
-    if(t&&destino==='camioneta')$('Patente').value=t.patente||'';
+    const t=((window.TECNICOS_TODOS||window.TECNICOS||[]))[+$('Solic').value];
     const aviso=$('CorreoAviso');
     const miCorreo=correoSesion();
     if(!t||!miCorreo){aviso.style.display='none';return;}
@@ -1909,14 +1896,6 @@ function crearModuloListado(cfg){
       aviso.style.display='block';aviso.style.background='#DCFCE7';aviso.style.color='#15803D';
       aviso.textContent='✅ Coincide con la cuenta con la que iniciaste sesión.';
     }
-  }
-  function setDestino(d){
-    destino=d;
-    $('SegVeh').classList.toggle('active',d==='camioneta');
-    $('SegProj').classList.toggle('active',d==='proyecto');
-    $('VehWrap').style.display=(d==='camioneta')?'block':'none';
-    $('ProjWrap').style.display=(d==='proyecto')?'block':'none';
-    if(d==='camioneta')solicChange();
   }
   function addItem(nombre,cant){
     const wrap=$('Items');
@@ -1941,7 +1920,7 @@ function crearModuloListado(cfg){
     })).filter(x=>x.articulo);
   }
   async function enviar(){
-    const t=(window.TECNICOS||[])[+$('Solic').value];
+    const t=((window.TECNICOS_TODOS||window.TECNICOS||[]))[+$('Solic').value];
     if(!t){alert('Selecciona el solicitante.');return;}
     const miCorreo=correoSesion();
     if(t.correo && miCorreo && t.correo.toLowerCase()!==miCorreo){
@@ -1949,28 +1928,9 @@ function crearModuloListado(cfg){
     }
     const items=itemsGet();
     if(!items.length){alert('Agrega al menos un artículo.');return;}
-    let destinoTxt='',destinoRef='';
-    if(destino==='camioneta'){
-      const pat=$('Patente').value.trim();
-      if(!pat){alert('Falta la patente de la camioneta.');return;}
-      destinoTxt='Camioneta '+t.nombre+' / '+pat; destinoRef=pat;
-    }else{
-      const ps=$('Proyecto');const pid=ps.value;
-      if(!pid){alert('Selecciona el proyecto.');return;}
-      if(pid==='__manual__'){
-        const nombreManual=$('ProyectoManual').value.trim();
-        if(!nombreManual){alert('Escribe el nombre del proyecto.');return;}
-        destinoTxt='Proyecto '+nombreManual; destinoRef=nombreManual;
-      }else{
-        destinoTxt='Proyecto '+(ps.options[ps.selectedIndex].text); destinoRef=pid;
-      }
-    }
     const payload={
       categoria:cfg.categoria,
-      tipo:destino, destino:destinoTxt, destinoRef:destinoRef,
       solicitante:t.nombre, correo:t.correo,
-      patente:destino==='camioneta'?$('Patente').value.trim():'',
-      proyecto:destino==='proyecto'?($('Proyecto').value==='__manual__'?$('ProyectoManual').value.trim():$('Proyecto').options[$('Proyecto').selectedIndex].text):'',
       articulos:items, obs:$('Obs').value.trim(), fecha:new Date().toLocaleString('es-CL')
     };
     const btn=$('Send'),msg=$('Msg');
@@ -1993,7 +1953,6 @@ function crearModuloListado(cfg){
       msg.textContent=sinConfirmar?'✅ Enviado (sin confirmación del servidor — revisa la planilla en un minuto)':'✅ Enviado'+(code?(' · '+code):'');
       msg.style.color='var(--green)';
       $('Obs').value='';$('Items').innerHTML='';addItem();
-      $('ProyectoManual').value='';$('ProyectoManual').style.display='none';
       renderHist();
     }catch(e){
       msg.textContent='✗ '+(e.message||e);msg.style.color='var(--nc)';
@@ -2006,11 +1965,7 @@ function crearModuloListado(cfg){
     try{
       const list=await window.SafecardSolic.list(cfg.coleccion);
       if(!list.length){c.innerHTML='<p class="sub">Sin solicitudes aún.</p>';return;}
-      c.innerHTML=list.slice(0,15).map(s=>{
-        const esCamioneta=/camioneta/i.test(s.destino||'');
-        const ico=esCamioneta?'🚚':'🏗️';
-        return `<div class="mhrow"><span class="mh-code">${esc(s.code||'—')}</span><span class="mh-dest"><span class="ico">${ico}</span>${esc(s.destino||'')}</span><span class="mh-meta">${esc((s.articulos||[]).length)} art. · ${esc(s.fecha||'')}</span></div>`;
-      }).join('');
+      c.innerHTML=list.slice(0,15).map(s=>`<div class="mhrow"><span class="mh-code">${esc(s.code||'—')}</span><span class="mh-dest"><span class="ico">${cfg.icon}</span>${esc(s.solicitante||'')}</span><span class="mh-meta">${esc((s.articulos||[]).length)} art. · ${esc(s.fecha||'')}</span></div>`).join('');
     }catch(e){c.innerHTML='<p class="sub">—</p>';}
   }
   function abrirEstadisticas(){
@@ -2039,24 +1994,18 @@ function crearModuloListado(cfg){
   }
   function llenarFiltros(){
     opts('FInsumo',estUniq(estRows.map(r=>r.insumo)),'Todos');
-    opts('FProy',estUniq(estRows.map(r=>r.proyecto)),'Todos');
-    opts('FCam',estUniq(estRows.map(r=>r.camioneta)),'Todas');
     opts('FCorreo',estUniq(estRows.map(r=>r.correo)),'Todos');
   }
   function limpiarFiltros(){
-    ['FInsumo','FProy','FCam','FCorreo','FDestino','FDesde','FHasta'].forEach(id=>{const e2=$(id);if(e2)e2.value='';});
+    ['FInsumo','FCorreo','FDesde','FHasta'].forEach(id=>{const e2=$(id);if(e2)e2.value='';});
     renderEst();
   }
   function filtradas(){
-    const fi=$('FInsumo').value,fp=$('FProy').value,fc=$('FCam').value,fco=$('FCorreo').value,fd=$('FDestino').value;
+    const fi=$('FInsumo').value,fco=$('FCorreo').value;
     const fDesde=$('FDesde').value,fHasta=$('FHasta').value;
     return estRows.filter(r=>{
       if(fi&&r.insumo!==fi)return false;
-      if(fp&&r.proyecto!==fp)return false;
-      if(fc&&r.camioneta!==fc)return false;
       if(fco&&r.correo!==fco)return false;
-      if(fd==='proyecto'&&!r.proyecto)return false;
-      if(fd==='camioneta'&&!r.camioneta)return false;
       const dia=(r.fecha||'').slice(0,10);
       if(fDesde&&dia&&dia<fDesde)return false;
       if(fHasta&&dia&&dia>fHasta)return false;
@@ -2068,18 +2017,17 @@ function crearModuloListado(cfg){
     $('TablaCount').textContent=rows.length;
     if(!rows.length){wrap.innerHTML='<p class="sub" style="padding:14px">Sin resultados para estos filtros.</p>';return;}
     const ordenado=rows.slice().sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
-    wrap.innerHTML='<table><thead><tr><th>Fecha</th><th>Código</th><th>Equipo</th><th>Destino</th><th class="wrap-txt">Insumo</th><th style="text-align:right">Cant.</th></tr></thead><tbody>'+
+    wrap.innerHTML='<table><thead><tr><th>Fecha</th><th>Código</th><th>Técnico</th><th class="wrap-txt">Insumo</th><th style="text-align:right">Cant.</th></tr></thead><tbody>'+
       ordenado.map(r=>{
         const fechaTxt=(r.fecha||'').replace('T',' ').slice(0,16);
-        const dest=r.proyecto?('🏗️ '+r.proyecto):(r.camioneta?('🚚 '+r.camioneta):'—');
-        return `<tr><td>${esc(fechaTxt)}</td><td>${esc(r.codigo||'—')}</td><td>${esc(estNombreEquipo(r.correo))}</td><td>${esc(dest)}</td><td class="wrap-txt">${esc(r.insumo)}</td><td style="text-align:right">${(+r.cantidad||0).toLocaleString('es-CL')}</td></tr>`;
+        return `<tr><td>${esc(fechaTxt)}</td><td>${esc(r.codigo||'—')}</td><td>${esc(estNombreEquipo(r.correo))}</td><td class="wrap-txt">${esc(r.insumo)}</td><td style="text-align:right">${(+r.cantidad||0).toLocaleString('es-CL')}</td></tr>`;
       }).join('')+'</tbody></table>';
   }
   function exportarCSV(){
     const rows=ultimaFiltrada;
     if(!rows.length){alert('No hay datos filtrados para exportar.');return;}
-    const head=['Fecha','Codigo','Equipo/Correo','Proyecto','Camioneta','Insumo','Cantidad'];
-    const lineas=[head.join(';')].concat(rows.map(r=>[r.fecha||'',r.codigo||'',r.correo||'',r.proyecto||'',r.camioneta||'',(r.insumo||'').replace(/;/g,','),r.cantidad||0].join(';')));
+    const head=['Fecha','Codigo','Tecnico','Correo','Insumo','Cantidad'];
+    const lineas=[head.join(';')].concat(rows.map(r=>[r.fecha||'',r.codigo||'',estNombreEquipo(r.correo),r.correo||'',(r.insumo||'').replace(/;/g,','),r.cantidad||0].join(';')));
     const blob=new Blob(['\uFEFF'+lineas.join('\n')],{type:'text/csv;charset=utf-8'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');a.href=url;a.download=cfg.categoria+'_'+new Date().toISOString().slice(0,10)+'.csv';
@@ -2097,11 +2045,10 @@ function crearModuloListado(cfg){
       `<div class="est-kpi"><div class="v">${nSolic}</div><div class="l">Solicitudes</div></div>`+
       `<div class="est-kpi"><div class="v">${rows.length}</div><div class="l">Líneas</div></div>`;
     pieSVG(ns+'EstPie',estAgrupa(rows,'insumo'));
-    $('BarProy').innerHTML=estBarrasHTML(estAgrupa(rows.filter(r=>r.proyecto),'proyecto'),'var(--or)',15);
     const equipoMapa=estAgrupa(rows,'correo');
     const equipoMapaNombres={};
     Object.entries(equipoMapa).forEach(([k,v])=>{const nom=estNombreEquipo(k);equipoMapaNombres[nom]=(equipoMapaNombres[nom]||0)+v;});
-    $('BarEquipo').innerHTML=estBarrasHTML(equipoMapaNombres,'#2563EB',15);
+    $('BarEquipo').innerHTML=estBarrasHTML(equipoMapaNombres,'var(--or)',15);
     renderTabla(rows);
   }
   function llenarProyeccion(){
@@ -2167,7 +2114,7 @@ function htmlModuloPermisos(){
     <div class="card">
       <h2 style="margin:0 0 4px">🗓️ Solicitud de Permiso</h2>
       <p class="sub" style="margin:0 0 14px">Avisa una inasistencia. Se envía por correo y se registra en la planilla.</p>
-      <div>
+      <div class="solicitud-form">
         <label class="fl">Solicitante</label>
         <select id="peSolic"></select>
         <div id="peCorreoAviso" style="display:none;margin-top:6px;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600"></div>
@@ -2260,7 +2207,7 @@ function crearModuloPermisos(cfg){
   function init(){
     if(ready){ renderHist(); return; }
     document.getElementById(cfg.containerId).innerHTML=htmlModuloPermisos();
-    $('Solic').innerHTML='<option value="">— selecciona —</option>'+(window.TECNICOS||[]).map((t,i)=>`<option value="${i}">${esc(t.nombre)}</option>`).join('');
+    $('Solic').innerHTML='<option value="">— selecciona —</option>'+((window.TECNICOS_TODOS||window.TECNICOS||[])).map((t,i)=>`<option value="${i}">${esc(t.nombre)}</option>`).join('');
     document.getElementById('peTipo').addEventListener('change',()=>{
       document.getElementById('peOtroWrap').style.display=(document.getElementById('peTipo').value==='Otros')?'block':'none';
     });
@@ -2282,7 +2229,7 @@ function crearModuloPermisos(cfg){
     document.getElementById('peDesdeWrap').style.display=todoDia?'none':'block';
   }
   async function enviar(){
-    const t=(window.TECNICOS||[])[+document.getElementById('peSolic').value];
+    const t=((window.TECNICOS_TODOS||window.TECNICOS||[]))[+document.getElementById('peSolic').value];
     if(!t){alert('Selecciona el solicitante.');return;}
     const fecha=document.getElementById('peFecha').value;
     if(!fecha){alert('Selecciona la fecha del permiso.');return;}
