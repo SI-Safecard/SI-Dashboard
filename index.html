@@ -202,10 +202,17 @@
     <div class="viewtabs">
       <button id="tabExec" class="vtab active" onclick="setView('exec')">🏗️ En ejecución <span class="cnt" id="nExec">0</span></button>
       <button id="tabFin" class="vtab" onclick="setView('fin')">🏁 Finalizados <span class="cnt" id="nFin">0</span></button>
-      <button id="tabMat" class="vtab" onclick="setView('mat')">📦 Solicitud de materiales</button>
+      <button id="tabMat" class="vtab" onclick="setView('mat')">📦 Solicitud</button>
       <a class="vtab" href="#" id="tabRendicion" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">💰 Rendición de Gastos</a>
     </div>
     <div id="viewMat" style="display:none">
+      <div class="segbtns" id="solCatBtns" style="max-width:640px;margin-bottom:16px">
+        <button type="button" class="seg active" data-cat="materiales" onclick="setSolCat('materiales')">📦 Materiales</button>
+        <button type="button" class="seg" data-cat="epp" onclick="setSolCat('epp')">🦺 EPP</button>
+        <button type="button" class="seg" data-cat="herr" onclick="setSolCat('herr')">🧰 Herramientas</button>
+        <button type="button" class="seg" data-cat="permisos" onclick="setSolCat('permisos')">🗓️ Permisos</button>
+      </div>
+      <div id="sol_materiales">
       <div class="mat-layout">
       <div class="card">
         <h2 style="margin:0 0 4px">📦 Solicitud de materiales</h2>
@@ -310,6 +317,11 @@
           <p class="sub" style="margin-top:10px;font-size:11.5px">🟧 Barra sólida = histórico real &nbsp;·&nbsp; 🟧 Barra rayada = proyección (estimación por tendencia lineal, calculada con todo el histórico disponible del insumo elegido, sin importar los filtros de fecha de arriba).</p>
         </div>
       </div>
+      </div>
+
+      <div id="sol_epp" style="display:none"></div>
+      <div id="sol_herr" style="display:none"></div>
+      <div id="sol_permisos" style="display:none"></div>
     </div>
 
    <div id="viewExec">
@@ -411,6 +423,10 @@ window.FIREBASE_CONFIG = {
 /* ========================================================= */
 
 window.SCM_ENDPOINT="https://script.google.com/macros/s/AKfycbxOu0BZBtw_BJdtlYs7lhU7fxGt6HC3jkFgPxQQ36ZNrBAMMsc5AoGXOZ2I6zl7u_Jmqw/exec";
+/* Conectores nuevos: pega aquí las URLs /exec una vez que despliegues el Apps Script combinado (EPP + Herramientas + Permisos) */
+window.EPP_ENDPOINT="https://script.google.com/macros/s/AKfycbxQSVvR_5YdOEMCTlJ9KQWNRCv4FXliv55rAllvxxXDz79HViIS570l_TYtjm9pMjAGAg/exec";
+window.HERR_ENDPOINT="https://script.google.com/macros/s/AKfycbxQSVvR_5YdOEMCTlJ9KQWNRCv4FXliv55rAllvxxXDz79HViIS570l_TYtjm9pMjAGAg/exec";
+window.PERM_ENDPOINT="https://script.google.com/macros/s/AKfycbxQSVvR_5YdOEMCTlJ9KQWNRCv4FXliv55rAllvxxXDz79HViIS570l_TYtjm9pMjAGAg/exec";
 window.APP_SEGUIMIENTO_URL="https://si-safecard.github.io/SI-Safecard/"; // app SI-Safecard (Seguimiento)
 window.APP_RENDICION_URL="https://si-safecard.github.io/Rendicion-Safecard/"; // app Rendición de Gastos
 (function(){ const a=document.getElementById('tabRendicion'); if(a) a.href=window.APP_RENDICION_URL; })();
@@ -428,6 +444,9 @@ window.TECNICOS=[
   {correo:"pablo.abarca@safecard.cl",     nombre:"Pablo Abarca",     patente:"",        rol:"admin"}
 ];
 window.MATERIALES=["200mt 1-Fibra LC-LC MonoModo", "500MT 1-FIBRA LC-LC MONOMODO", "ADAPTADOR SPLITTER POE 24V A 12V", "ADHESIVO VINILIT PVC POTE 240CC CON PINCEL", "Abrazadera Omega Metal 20 mm", "Abrazadera Omega Metal 25 mm", "Abrazadera Omega Metal 32 mm", "Abrazadera Tornillo / metal 20 mm", "Abrazadera caddy Click 20-25 mm", "Acrilico Isafe vehicular 4 perforaciones Esquina", "Acrilico Isafe vehicular doble fast", "Acrílico integración SAFETOUCH para Isafe vehicular", "Antena 3G LTAP-MINI-LTE-KIT", "Antena Punto a Punto LOCO5AC", "Antena Sectorial LITE AP-AC-LAP120", "Antena UAP-AC-M", "Antena WAP-AC MIKROTIK", "Antena mAP MIKROTIK ROUTERBOARD", "Armario Metálico 600x400x250 Ekoline", "Armario metálico 250x200x150 ekoline", "Armario metálico 300x250x150 ekoline", "Automático Monofásico 1 x 10A", "Automático Monofásico 1 x 16A", "BROCA PARA METAL HSS 6,0 MM", "BROCA SDS 10\" concreto", "Backup MiniPC y Switch (ART COMP)", "Bandeja 10\" Rack", "Bandeja para Rack 19\"", "Barrera SKidata 3.6 GB (ART COMP)", "Barrera SKidata 3.6 N (ART COMP)", "Barrera SKidata 3GB (ART COMP)", "Barrera SKidata 3GB ARTICULADA (ART COMP)", "Barrera SKidata 3N (ART COMP)", "Barrera SKidata 3N ARTICULADA (ART COMP)", "Barrera Skidata (GB) 3.0m", "Barrera Skidata (GB) 3.6m", "Barrera Skidata (N) 3,0m", "Barrera Skidata (N) 3,6m", "Barrera Skidata Articulada GB", "Barrera Skidata Articulada N.", "Barrera ZK Teco ProBG3060L 6M (ART COMP)", "Barrera ZK Teco ProBG3060R 6M (ART COMP)", "Barrera ZKTeco ARTICULADA PROBG3130L-LED 3M", "Barrera ZKTeco ARTICULADA PROBG3130R-LED 3M", "Barrera ZKTeco PROGB3030R", "Barrera ZKTeco ProBG 6M R", "Barrera ZKTeco ProBG3030L", "Barrera ZKTeco ProBG3030R 3M (ART COMP)", "Barrera ZKTeco ProBG3045L 4.5M", "Barrera ZKTeco ProBG3045L 4.5M (ART COMP)", "Barrera ZKTeco ProBG3045R 4.5M", "Barrera ZKTeco ProBG3045R 4.5M (ART COMP)", "Barrera ZKTeco ProBG3060L 6L", "Barrera ZKTeco ProGB3030L 3M (ART COMP)", "Barrera ZKteco Articulada LED 3M (ART COMP)", "Boton de Emergencia", "Botonera de  Emergencia SG (ART COMP)", "Brazo Torniquete  Dimension: 500*38(mm)", "Broca Concreto 10\"", "Broca Concreto 6\"", "Broca Concreto 8\"", "Broca SDS 10mm Metal", "Broca SDS 8mm x 110mm", "Broca SDS concreto 6mm x 110mm", "CABLE PODER PC 1,8MT", "CAMARA HIKVISION (ART COMP)", "CARTUCHO GAS 190 GRS TOP SAFE PROVIDUS", "Cable Eva 1,5 mm libre de halogeno Blanco", "Cable Eva 1,5 mm libre de halogeno Rojo", "Cable Eva 1.5 mm libre de halogeno Verde", "Cable Eva 2,5 mm libre de halogeno Blanco", "Cable Eva 2,5 mm libre de halogeno Rojo", "Cable Eva 2,5 mm libre de halogeno Verde", "Cable Eva 4 mm libre de halogeno Blanco", "Cable Eva 4 mm libre de halogeno Rojo", "Cable Eva 4 mm libre de halogeno Verde", "Cable Gris CAT6 UTP 305 Mt", "Cable auxiliar 2 mt (parlante citofonia)", "Caja Botonera de Emergencia de PVC (1 perforación 22mm Ip55)", "Caja Estanca Metalica 200x200", "Caja TB Controlador Genérico", "Caja estanca 100x100x65 metalica", "Caja estanca 100x65x65 metalica", "Caja estanca plástica 90x90", "Caja plastica DRL 100x100", "Canaleta Blanca DLP 40x16", "Canaleta DLP Blanca 100x50", "Canaleta blanca 20x12,5 mm C/Tapa", "Cap Lite", "Carcasa Faceid", "Carcasa Isafe wall", "Carcasa SAFETOUCH exterior visera larga", "Carcasa SafeTouch interior 3D", "Carcasa isafe vehicular", "Carcasas SAFETOUCH interior visera corta", "Circuito 220v EVA 1.5 mm (ART COMP)", "Circuito 220v EVA 2.5 mm (ART COMP)", "Citofonia PCG - Kensington (ART COMP)", "Citofonia PCG - Logitech (ART COMP)", "Combo Teclado Mouse USB KLASS Español - KB6721BK", "Conector RJ45 cat5 macho blindado UBIQUITI 100UNIDS.", "Conector Recto 20 mm P/Flexible Metálico", "Conector Recto 25 mm P/Flexible Metálico", "Conector Recto 32mm P/Flexible Metálico", "Conector de Derivacion 12-10", "Controlador Generico conector XBEE", "Controladora Barrera SKD (ART COMP)", "Conversor DC-DC", "Copla EMT 20 mm", "Copla EMT 25 mm", "Copla RJ45-CP6S Blindado", "CÁMARA DAHUA (ART COMP)", "CÁMARA QR LV3000H", "Cámara LPR HIKVISION", "Cámara LPR Quercus", "Cámara LPR Quercus Motorizada (ART COMP)", "Cámara QR EP3000Y", "Cámara Qr RD4500R, puerto RS232 / USB", "Cámara Smart ANPR DAHUA", "Cámara Web Kensington W2000", "Cámara Web Logitech Citofonía", "DS7100H Speedgate DA Doble (ART COMP)", "DS7100H Speedgate DA Simple (ART COMP)", "DS7100H Speedgate Doble Altura", "DS7100H Speedgate Simple Altura", "Destornillador Paleta Perno Fusible SKIDATA", "Destornillador para pernos fusibles alternativos SK (Paveway)", "Disco Diamantado 4.5\"", "Disco Diamantado 7\" Segmentado", "Disco Diamantado 9\" Continuo", "Disco de corte 4,5'", "Disipador Controladora SKD", "FACE ID (ART COMP)", "FACE ID Pedestal (ART COMP)", "FACE ID/VP Muro (ART COMP)", "FACE ID/VP vehicular Curvo (ART COMP)", "FACE ID/VP vehicular Recto (ART COMP)", "Face ID EASCO 8\" Muro", "Face ID EASCO 8\" Pedestal", "Face Recognition DAHUA", "Fuente de Poder LPV-100-24", "Fuente de poder MDR-60-24V", "Fuentes de poder MDR-60-12V", "GABINETE CENTRAL (ART COMP)", "GABINETE CENTRAL + 3G  (ART COMP)", "GABINETE CENTRAL c/ SW8 (ART COMP)", "Generico Apertura 2R (ART COMP)", "Genericos Apertura 4R (ART COMP)", "Genericos Apertura 8R (ART COMP)", "Golilla Corriente 3/8", "Guias Sierra copa 22-27MM", "Guias Sierra copa 32MM", "Hoja Sierra", "Huincha Aisladora Negra 3M 165", "Huincha de Goma autofundente", "Inyector poe 172 planet", "Isafe Vehicular V.1 (ART COMP)", "Isafe Vehicular c/Safetouch (ART COMP)", "Isafe Wall (ART COMP)", "Lector Tarjeta MIFARE USB ACR1281U-C2", "Letrero Residentes", "Letrero Un Auto a la Vez", "Letrero Visitas", "Loops", "MODULO RJ45 SFP S-RJ01", "Mini PC / local server", "Mini UPS DC140 usb FORZA", "OCR Mesón 315-E", "PANTALLA FT 801 / VM801B43A-BK Capacitiva", "PANTALLA FT800 / vm800B43A-BK Resistiva", "PCB Genérico", "PCG PC de guardia 3NStar", "PCG c/OCR mesón (ART COMP)", "PCG c/Pistola (ART COMP)", "PDU ENCHUFES HEMBRA Gabinete 10\"", "PILARES CAMARA LPR", "PILARES CAMARA QUERCUS", "PILOTO-LED AMARILLO LUZ PILOTO LED 220VAC 20MM- Luz piloto amarillo", "PILOTO-LED AZUL LUZ PILOTO LED 220VAC 20MM- Luz piloto azul", "PILOTO-LED BLANCA LUZ PILOTO LED 220VAC 20MM- Luz piloto blanca", "PILOTO-LED ROJO LUZ PILOTO LED 220VAC 20MM- Luz piloto rojo", "PILOTO-LED VERDE LUZ PILOTO LED 220VAC 20MM- Luz piloto verde", "PLACA RELE 8CH", "PLUMA ACC LIMITED 3.6 MT", "PLUMA ACC.LIMITED 3.0 MT", "PLUMA ACC.LIMITED 4.0 MT", "PLUMA ACC.LIMITED 4.5 MT", "PLUMA ACC.LIMITED GB 3.0 MT", "PLUMA BARRERA 3 MOOVI ORIGINAL BFT DE 3 MTS", "POE FACE ID EASCO", "Parlante citofonia", "Pedestal Face ID DAHUA", "Pernos Fusibles Skidata", "Pernos de anclaje 5 3/8", "Pernos fusibles Paveway", "Pilar CURVO Safetouch 1,60 mts", "Pilar Curvo safetouch vehicular", "Pilar Doble para SafeTouch Vehicular", "Pilar RECTO Safetouch 1,60 mts", "Pilar Triple para SafeTouch Vehicular", "Pilares rectos para safetouch", "Pistola OCR Honeywell 1960G", "Placa rele 2CH", "Placa rele 4CH", "Pluma AC Barrier Gate Boom 4,5M", "Pluma AC-Barrier.Gate-Boom 3,6 GB Skidata", "Pluma AC-Barrier.Gate-Boom 3,6 Skidata", "Pluma Skidata iluminada RGB - Normal 3.6 mt", "Pluma ZKTECO 3mt", "Pluma ZKTECO 4,5mt", "Pluma ZKTECO 4.5mt con LED", "Pluma ZKTECO 6 mt", "Pluma ZKTECO 6.0 mt con LED", "Pluma articulada Skidata", "Plumas AC - Barrier.Gate - Boom 3,0m Skidata", "Puerta Minusvalidos (ART COMP)", "RACK negro 1004 Linkmade", "RACK negro 1006 Linkmade", "Regulador de voltaje 600W / 181-274V TRIPPLITE", "Rele con Retardo", "Router HEX-S Mikrotik", "SAFETOUCH ACCESO EXT (ART COMP)", "SAFETOUCH ACCESO EXT 3D (ART COMP)", "SAFETOUCH ACCESO INT (ART COMP)", "SAFETOUCH ACCESO INT 3D (ART COMP)", "SAFETOUCH VEHICULAR CURVO (ART COMP)", "SAFETOUCH VEHICULAR CURVO 1,60 mt (ART COMP)", "SAFETOUCH VEHICULAR PILAR DOBLE (ART COMP)", "SAFETOUCH VEHICULAR PILAR TRIPLE (ART COMP)", "SAFETOUCH VEHICULAR RECTO (ART COMP)", "SAFETOUCH VEHICULAR RECTO 1,60 mt (ART COMP)", "SFP fibra PAR-WDM-BIDI SM 1GBPS", "SIERRA COPA Bi metal 32 MM", "Safetouch (ART COMP)", "Safetouch pantalla DW200", "Sensor barrera VR 10 ZK", "Sierra Copa Bi metal 22mm", "Sierra Copa Bi metal 27mm", "Silicona acrilica gris", "Soporte Antena para muro / 50 cm", "Soportes para fijación de switch y transformador", "SpeedGate Daosafe DS 212 Doble", "SpeedGate Daosafe DS 212 Single", "SpeedGate Daosafe DS 212 doble (ART COMP)", "SpeedGate Daosafe DS 212 simple (ART COMP)", "Speedgate H306 Simple", "Speedgate Nebula (ART COMP)", "Springsets GB", "Sprinset Normal", "Switch 4 RB260GSP", "Switch POE 4P (ART COMP)", "Switch POE 8P (ART COMP)", "Switch de 8 Mikrotik", "TARJETA DE GUARDIA", "TORNILLO VOLCANITA NEGRO PUNTA FINA 6x1 1/4", "TUBO CONDUIT PVC 20 mm", "TUBO CONDUIT PVC 25mm", "TUBO EMT 20mm 3MT", "TUBO EMT 25mm 3MT", "Tablet Zebra", "Tarjeta Generica RELE 4", "Tarjeta Genérica RELE 2", "Tarjeta Genérica RELE 8", "Tarjeta Isafe V2", "Tarjeta de memoria LPR", "Tarugo de nylon con tope M6 100 unidades", "Tarugo paloma volcanita 6mm 100 un", "Terminal EMT 20mm", "Terminal EMT 25mm", "Tornillo Cabeza Lenteja  8 X 1/2 Punta Broca (100UN)", "Tornillo Hexagonal 1-1/4", "Tornillo Lenteja 8 X 1 1/4 P.Broca", "Tornillo Lenteja 8 X 1 1/4 P.fina", "Tornillo p.fina 6x1 1/4", "Torniquete DS-112", "Torniquete Estadio DS-411 (ART COMP)", "Torniquete H106", "Torniquete Minusválidos Zkteco", "Torniquete Nebula Z310 \"Fierro\"", "Torniquete Nébula Z310 \"acrílico\"", "Torniquete Safecard DS-112 (ART COMP)", "Transformador 48V FACE ID", "Tubo Conduit PVC 32mm", "Tubo Flexible Metalico 20 mm", "Tubo Flexible Metalico 25 mm", "UPS FORZA 600VA", "VIDEO PORTERO DS-KD9633-WBE6 HIKVISION", "Visera Wall - Inoxidable"];
+window.EPP_ITEMS=["Linterna led recargable", "Guantes presición", "Guantes de construccion", "Guantes para soldar", "Guantes para tablero electrico", "Antiparras transparente", "Antiparras oscuras", "Protector auditivo", "Polainas de cuero", "Mascara de soldar", "Bloqueador solar", "Faja", "Rodillera", "Gorro Legionario", "Chaleco geologo reflectante"];
+window.HERR_ITEMS=["Maleta de Herramienta Grande", "Bolso Herramientas", "Atornillador Ph 3 X 200 Mm", "Atornillador Tactix #3 Con Largo 8 Plgds Con Torque", "Atornillador paleta", "Alicate universal", "Alicate cortante", "Cartonero", "Llave francesa", "Huincha de medir", "Chicarra 1/2", "Crimpeadora Red", "Juego de dados Bujias", "Juego llave punta corona", "Juego llaves Allen", "Punta phillips ph2", "Martillo", "Nivel", "Juego perilleros", "Pela cables", "Taladro inalámbrico", "Tester con tenaza", "Tester de Red", "Toma hexagonal", "Canana cuero", "Canana tela", "Esmeril 4\"", "Esmeril 9\"", "Roto martillo", "Cango", "Soplador", "Taladro mecánico", "Cierra circular", "Máquina de soldar", "Rotuladora", "Escalera telescópica", "Escalera en A", "Soplete", "laucha pasacables 50 metros"];
+window.PERMISOS_TIPOS=["Hora médica","Trámites personales","Otros"];
 
 let PROY=[];
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
@@ -494,8 +513,20 @@ function setView(v){
   document.getElementById('tabExec').classList.toggle('active',v==='exec');
   document.getElementById('tabFin').classList.toggle('active',v==='fin');
   document.getElementById('tabMat').classList.toggle('active',v==='mat');
-  if(v==='mat')matInit();
+  if(v==='mat'){matInit();setSolCat(SOL_CAT||'materiales');}
   render();
+}
+let SOL_CAT='materiales';
+function setSolCat(cat){
+  SOL_CAT=cat;
+  document.querySelectorAll('#solCatBtns .seg').forEach(b=>b.classList.toggle('active',b.dataset.cat===cat));
+  ['materiales','epp','herr','permisos'].forEach(c=>{
+    const el=document.getElementById('sol_'+c);
+    if(el)el.style.display=(c===cat)?'block':'none';
+  });
+  if(cat==='epp'){MOD_EPP.init();}
+  if(cat==='herr'){MOD_HERR.init();}
+  if(cat==='permisos'){MOD_PERM.init();}
 }
 
 /* ===== LOGIN DEL PANEL ===== */
@@ -1718,6 +1749,708 @@ function abrirDiagramaProyecto(nombreProyecto){
   }, (msg)=>{ body.innerHTML='<div style="text-align:center;color:#b91c1c;padding:40px 0">'+esc(msg)+'</div>'; });
 }
 
+/* ===================================================================
+   MOTOR GENÉRICO REUTILIZABLE: Solicitud de EPP / Herramientas
+   (mismo formulario, historial, estadísticas y proyección que Materiales,
+   parametrizado por categoría: ítems predefinidos, endpoint y colección)
+   =================================================================== */
+function htmlModuloListado(cfg){
+  const ns=cfg.ns;
+  return `
+  <div class="mat-layout">
+    <div class="card">
+      <h2 style="margin:0 0 4px">${cfg.icon} Solicitud de ${cfg.catLabel}</h2>
+      <p class="sub" style="margin:0 0 14px">Genera una solicitud de ${cfg.catLabel.toLowerCase()}. Se envía por correo a bodega y se registra en la planilla.</p>
+      <div>
+        <label class="fl">Solicitante</label>
+        <select id="${ns}Solic"></select>
+        <div id="${ns}CorreoAviso" style="display:none;margin-top:6px;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600"></div>
+        <div class="mrow2">
+          <div>
+            <label class="fl">Destino</label>
+            <div class="segbtns">
+              <button type="button" class="seg active" id="${ns}SegVeh">🚚 Para camioneta</button>
+              <button type="button" class="seg" id="${ns}SegProj">🏗️ Para proyecto</button>
+            </div>
+          </div>
+          <div id="${ns}VehWrap">
+            <label class="fl">Camioneta (patente)</label>
+            <input id="${ns}Patente" placeholder="Patente" />
+          </div>
+          <div id="${ns}ProjWrap" style="display:none">
+            <label class="fl">Proyecto (en ejecución)</label>
+            <select id="${ns}Proyecto"></select>
+            <input id="${ns}ProyectoManual" placeholder="Escribe el nombre del proyecto" style="display:none;margin-top:8px" />
+          </div>
+        </div>
+        <label class="fl" style="margin-top:16px">Artículos <span class="mat-badge" id="${ns}Count">0</span></label>
+        <div id="${ns}Items" class="mitems-box"></div>
+        <button type="button" class="btn ghost" id="${ns}AddItem">＋ Agregar artículo</button>
+        <label class="fl" style="margin-top:16px">Observación (opcional)</label>
+        <textarea id="${ns}Obs" rows="2" placeholder="Comentario para bodega…"></textarea>
+        <div style="margin-top:16px;display:flex;gap:10px;align-items:center">
+          <button type="button" class="btn primary" id="${ns}Send">📨 Enviar solicitud</button>
+          <span id="${ns}Msg" class="sub"></span>
+        </div>
+      </div>
+      <datalist id="${ns}List"></datalist>
+    </div>
+    <div class="card" style="align-self:start">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <h2 style="margin:0">🕓 Últimas solicitudes</h2>
+        <button class="btn-sec" id="${ns}AbrirEst">📊 Estadísticas</button>
+      </div>
+      <div id="${ns}Hist"><p class="sub">—</p></div>
+    </div>
+  </div>
+
+  <div id="${ns}EstWrap" class="card" style="margin-top:16px;display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <h2 style="margin:0">📊 Estadísticas de ${cfg.catLabel}</h2>
+      <div><button class="btn-sec" id="${ns}Refrescar">🔄 Actualizar</button> <button class="btn-sec" id="${ns}Cerrar">✕ Cerrar</button></div>
+    </div>
+    <p class="sub" id="${ns}EstMsg" style="margin:6px 0 14px">—</p>
+    <div class="est-filtros">
+      <label class="fl">Insumo<select id="${ns}FInsumo"></select></label>
+      <label class="fl">Proyecto<select id="${ns}FProy"></select></label>
+      <label class="fl">Camioneta<select id="${ns}FCam"></select></label>
+      <label class="fl">Equipo / Solicitante<select id="${ns}FCorreo"></select></label>
+      <label class="fl">Destino<select id="${ns}FDestino"><option value="">Todos</option><option value="proyecto">Proyecto</option><option value="camioneta">Camioneta</option></select></label>
+      <label class="fl">Fecha desde<input type="date" id="${ns}FDesde"></label>
+      <label class="fl">Fecha hasta<input type="date" id="${ns}FHasta"></label>
+      <label class="fl" style="align-self:end"><button class="btn-sec" style="width:100%" id="${ns}Limpiar">✕ Limpiar filtros</button></label>
+    </div>
+    <div class="est-kpis" id="${ns}EstKpis"></div>
+    <h3 class="est-h">🥧 Distribución de cantidad por insumo</h3>
+    <div id="${ns}EstPie"></div>
+    <div class="est-charts-grid">
+      <div><h3 class="est-h">🏗️ Cantidad por proyecto</h3><div id="${ns}BarProy" class="est-bars"></div></div>
+      <div><h3 class="est-h">🚚 Cantidad por camioneta / equipo</h3><div id="${ns}BarEquipo" class="est-bars"></div></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:18px">
+      <h3 class="est-h" style="margin:0">📋 Detalle <span id="${ns}TablaCount" class="mat-badge">0</span></h3>
+      <button class="btn-sec" id="${ns}ExportarCSV">⬇️ Exportar CSV</button>
+    </div>
+    <div class="est-table-wrap" id="${ns}TablaWrap"></div>
+
+    <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--line)">
+      <h3 class="est-h" style="margin:0 0 10px">📈 Tendencia y proyección de consumo</h3>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:end;margin-bottom:12px">
+        <label class="fl" style="min-width:220px;flex:0 1 380px">Insumo a analizar<select id="${ns}PInsumo" class="pinsumo-sel"></select></label>
+        <div>
+          <label class="fl">Vista</label>
+          <div class="segbtns" id="${ns}PGranBtns">
+            <button type="button" class="seg active" data-g="m">Mensual</button>
+            <button type="button" class="seg" data-g="q">Trimestral</button>
+            <button type="button" class="seg" data-g="s">Semestral</button>
+            <button type="button" class="seg" data-g="y">Anual</button>
+          </div>
+        </div>
+      </div>
+      <p class="sub" id="${ns}PMsg" style="margin-bottom:10px">—</p>
+      <div class="est-kpis" id="${ns}PKpis"></div>
+      <div id="${ns}PChart" class="est-bars" style="max-height:none;margin-top:10px"></div>
+      <p class="sub" style="margin-top:10px;font-size:11.5px">🟧 Barra sólida = histórico real &nbsp;·&nbsp; 🟧 Barra rayada = proyección (estimación por tendencia lineal, con todo el histórico disponible).</p>
+    </div>
+  </div>`;
+}
+
+function crearModuloListado(cfg){
+  const ns=cfg.ns;
+  let ready=false, destino='camioneta', estRows=[], proyGran='m', ultimaFiltrada=[];
+  const $=id=>document.getElementById(ns+id);
+
+  function init(){
+    if(ready){ renderHist(); return; }
+    document.getElementById(cfg.containerId).innerHTML=htmlModuloListado(cfg);
+    $('List').innerHTML=(window[cfg.itemsVar]||[]).map(m=>`<option value="${esc(m)}">`).join('');
+    $('Solic').innerHTML='<option value="">— selecciona —</option>'+(window.TECNICOS||[]).map((t,i)=>`<option value="${i}">${esc(t.nombre)}${t.patente?(' / '+esc(t.patente)):''}</option>`).join('');
+    $('Solic').addEventListener('change',solicChange);
+    $('SegVeh').addEventListener('click',()=>setDestino('camioneta'));
+    $('SegProj').addEventListener('click',()=>setDestino('proyecto'));
+    $('Proyecto').addEventListener('change',proyectoChange);
+    $('AddItem').addEventListener('click',()=>addItem());
+    $('Send').addEventListener('click',enviar);
+    $('AbrirEst').addEventListener('click',abrirEstadisticas);
+    $('Refrescar').addEventListener('click',cargarEstadisticas);
+    $('Cerrar').addEventListener('click',()=>{$('EstWrap').style.display='none';});
+    $('Limpiar').addEventListener('click',limpiarFiltros);
+    $('ExportarCSV').addEventListener('click',exportarCSV);
+    ['FInsumo','FProy','FCam','FCorreo','FDestino','FDesde','FHasta'].forEach(id=>$(id).addEventListener('change',renderEst));
+    $('PInsumo').addEventListener('change',renderProyeccion);
+    document.querySelectorAll('#'+ns+'PGranBtns .seg').forEach(b=>b.addEventListener('click',()=>setGran(b.dataset.g)));
+    addItem();
+    ready=true;
+    poblarProyectos();
+    renderHist();
+  }
+  function poblarProyectos(){
+    const activos=(window.PROY||[]).filter(p=>!isFin(p));
+    const ps=$('Proyecto');
+    ps.innerHTML='<option value="">— selecciona —</option>'+activos.map(p=>`<option value="${esc(p.id)}">${esc(p.nombre||pidText(p))}</option>`).join('')+'<option value="__manual__">✏️ Otro (escribir manualmente)</option>';
+  }
+  function proyectoChange(){
+    const manual=$('Proyecto').value==='__manual__';
+    const inp=$('ProyectoManual');
+    inp.style.display=manual?'block':'none';
+    if(manual)inp.focus(); else inp.value='';
+  }
+  function solicChange(){
+    const t=(window.TECNICOS||[])[+$('Solic').value];
+    if(t&&destino==='camioneta')$('Patente').value=t.patente||'';
+    const aviso=$('CorreoAviso');
+    const miCorreo=correoSesion();
+    if(!t||!miCorreo){aviso.style.display='none';return;}
+    if(!t.correo){aviso.style.display='none';return;}
+    if(t.correo.toLowerCase()!==miCorreo){
+      aviso.style.display='block';aviso.style.background='#FEF3C7';aviso.style.color='#92400E';
+      aviso.textContent='⚠️ Iniciaste sesión como '+miCorreo+', pero elegiste a "'+t.nombre+'". ¿Seguro que no es tu nombre el que falta seleccionar?';
+    }else{
+      aviso.style.display='block';aviso.style.background='#DCFCE7';aviso.style.color='#15803D';
+      aviso.textContent='✅ Coincide con la cuenta con la que iniciaste sesión.';
+    }
+  }
+  function setDestino(d){
+    destino=d;
+    $('SegVeh').classList.toggle('active',d==='camioneta');
+    $('SegProj').classList.toggle('active',d==='proyecto');
+    $('VehWrap').style.display=(d==='camioneta')?'block':'none';
+    $('ProjWrap').style.display=(d==='proyecto')?'block':'none';
+    if(d==='camioneta')solicChange();
+  }
+  function addItem(nombre,cant){
+    const wrap=$('Items');
+    const row=document.createElement('div');row.className='mitem';
+    row.innerHTML=`<span class="mi-num">${wrap.children.length+1}</span>
+      <input list="${ns}List" class="mi-nom" placeholder="Escribe el artículo…" value="${esc(nombre||'')}">
+      <input type="number" min="1" step="1" class="mi-cant" placeholder="Cant." value="${cant||''}">
+      <button type="button" class="mi-del">✕</button>`;
+    row.querySelector('.mi-del').addEventListener('click',()=>{row.remove();renumerar();});
+    wrap.appendChild(row);
+    renumerar();
+  }
+  function renumerar(){
+    const filas=document.querySelectorAll('#'+ns+'Items .mitem');
+    filas.forEach((r,i)=>{const n=r.querySelector('.mi-num');if(n)n.textContent=i+1;});
+    const badge=$('Count'); if(badge)badge.textContent=filas.length;
+  }
+  function itemsGet(){
+    return Array.from(document.querySelectorAll('#'+ns+'Items .mitem')).map(r=>({
+      articulo:r.querySelector('.mi-nom').value.trim(),
+      cantidad:r.querySelector('.mi-cant').value.trim()
+    })).filter(x=>x.articulo);
+  }
+  async function enviar(){
+    const t=(window.TECNICOS||[])[+$('Solic').value];
+    if(!t){alert('Selecciona el solicitante.');return;}
+    const miCorreo=correoSesion();
+    if(t.correo && miCorreo && t.correo.toLowerCase()!==miCorreo){
+      if(!confirm('Iniciaste sesión como '+miCorreo+', pero la solicitud va a nombre de "'+t.nombre+'" ('+t.correo+').\n\n¿Seguro que quieres enviarla así?'))return;
+    }
+    const items=itemsGet();
+    if(!items.length){alert('Agrega al menos un artículo.');return;}
+    let destinoTxt='',destinoRef='';
+    if(destino==='camioneta'){
+      const pat=$('Patente').value.trim();
+      if(!pat){alert('Falta la patente de la camioneta.');return;}
+      destinoTxt='Camioneta '+t.nombre+' / '+pat; destinoRef=pat;
+    }else{
+      const ps=$('Proyecto');const pid=ps.value;
+      if(!pid){alert('Selecciona el proyecto.');return;}
+      if(pid==='__manual__'){
+        const nombreManual=$('ProyectoManual').value.trim();
+        if(!nombreManual){alert('Escribe el nombre del proyecto.');return;}
+        destinoTxt='Proyecto '+nombreManual; destinoRef=nombreManual;
+      }else{
+        destinoTxt='Proyecto '+(ps.options[ps.selectedIndex].text); destinoRef=pid;
+      }
+    }
+    const payload={
+      categoria:cfg.categoria,
+      tipo:destino, destino:destinoTxt, destinoRef:destinoRef,
+      solicitante:t.nombre, correo:t.correo,
+      patente:destino==='camioneta'?$('Patente').value.trim():'',
+      proyecto:destino==='proyecto'?($('Proyecto').value==='__manual__'?$('ProyectoManual').value.trim():$('Proyecto').options[$('Proyecto').selectedIndex].text):'',
+      articulos:items, obs:$('Obs').value.trim(), fecha:new Date().toLocaleString('es-CL')
+    };
+    const btn=$('Send'),msg=$('Msg');
+    btn.disabled=true;msg.textContent='Enviando…';msg.style.color='var(--muted)';
+    let code='';
+    try{
+      const url=window[cfg.endpointVar];
+      if(!url||/PEGA_AQUI/.test(url))throw new Error('Falta configurar el conector de '+cfg.catLabel+' (Apps Script).');
+      var data=null, sinConfirmar=false;
+      try{
+        const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+        data=await res.json();
+      }catch(networkErr){
+        await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+        sinConfirmar=true;
+      }
+      if(data && !data.ok)throw new Error(data.error||'Respuesta inválida del conector.');
+      code=(data&&data.code)||'';
+      try{ if(window.SafecardSolic) await window.SafecardSolic.save(Object.assign({code},payload),cfg.coleccion); }catch(e){}
+      msg.textContent=sinConfirmar?'✅ Enviado (sin confirmación del servidor — revisa la planilla en un minuto)':'✅ Enviado'+(code?(' · '+code):'');
+      msg.style.color='var(--green)';
+      $('Obs').value='';$('Items').innerHTML='';addItem();
+      $('ProyectoManual').value='';$('ProyectoManual').style.display='none';
+      renderHist();
+    }catch(e){
+      msg.textContent='✗ '+(e.message||e);msg.style.color='var(--nc)';
+    }
+    btn.disabled=false;
+  }
+  async function renderHist(){
+    const c=$('Hist');if(!c)return;
+    if(!window.SafecardSolic){c.innerHTML='<p class="sub">El historial se verá al conectar la nube.</p>';return;}
+    try{
+      const list=await window.SafecardSolic.list(cfg.coleccion);
+      if(!list.length){c.innerHTML='<p class="sub">Sin solicitudes aún.</p>';return;}
+      c.innerHTML=list.slice(0,15).map(s=>{
+        const esCamioneta=/camioneta/i.test(s.destino||'');
+        const ico=esCamioneta?'🚚':'🏗️';
+        return `<div class="mhrow"><span class="mh-code">${esc(s.code||'—')}</span><span class="mh-dest"><span class="ico">${ico}</span>${esc(s.destino||'')}</span><span class="mh-meta">${esc((s.articulos||[]).length)} art. · ${esc(s.fecha||'')}</span></div>`;
+      }).join('');
+    }catch(e){c.innerHTML='<p class="sub">—</p>';}
+  }
+  function abrirEstadisticas(){
+    $('EstWrap').style.display='block';
+    if(!estRows.length)cargarEstadisticas();
+    $('EstWrap').scrollIntoView({behavior:'smooth'});
+  }
+  async function cargarEstadisticas(){
+    const msg=$('EstMsg');msg.textContent='Cargando datos…';
+    try{
+      const url=window[cfg.endpointVar];
+      if(!url||/PEGA_AQUI/.test(url))throw new Error('Falta configurar el conector de '+cfg.catLabel+' (Apps Script).');
+      const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'data',categoria:cfg.categoria})});
+      const data=await res.json();
+      if(!data||!data.ok)throw new Error((data&&data.error)||'Respuesta inválida');
+      estRows=(data.rows||[]).map(r=>Object.assign({},r,{mes:(r.fecha||'').slice(0,7)}));
+      llenarFiltros();renderEst();
+      llenarProyeccion();renderProyeccion();
+      msg.textContent=estRows.length+' líneas cargadas.';
+    }catch(e){msg.textContent='No se pudo cargar: '+(e.message||e)+' (revisa que el Apps Script esté reimplementado).';}
+  }
+  function opts(id,vals,label){
+    const el=$(id);const cur=el.value;
+    el.innerHTML='<option value="">'+label+'</option>'+vals.map(v=>`<option>${esc(v)}</option>`).join('');
+    if(cur&&vals.indexOf(cur)>=0)el.value=cur;
+  }
+  function llenarFiltros(){
+    opts('FInsumo',estUniq(estRows.map(r=>r.insumo)),'Todos');
+    opts('FProy',estUniq(estRows.map(r=>r.proyecto)),'Todos');
+    opts('FCam',estUniq(estRows.map(r=>r.camioneta)),'Todas');
+    opts('FCorreo',estUniq(estRows.map(r=>r.correo)),'Todos');
+  }
+  function limpiarFiltros(){
+    ['FInsumo','FProy','FCam','FCorreo','FDestino','FDesde','FHasta'].forEach(id=>{const e2=$(id);if(e2)e2.value='';});
+    renderEst();
+  }
+  function filtradas(){
+    const fi=$('FInsumo').value,fp=$('FProy').value,fc=$('FCam').value,fco=$('FCorreo').value,fd=$('FDestino').value;
+    const fDesde=$('FDesde').value,fHasta=$('FHasta').value;
+    return estRows.filter(r=>{
+      if(fi&&r.insumo!==fi)return false;
+      if(fp&&r.proyecto!==fp)return false;
+      if(fc&&r.camioneta!==fc)return false;
+      if(fco&&r.correo!==fco)return false;
+      if(fd==='proyecto'&&!r.proyecto)return false;
+      if(fd==='camioneta'&&!r.camioneta)return false;
+      const dia=(r.fecha||'').slice(0,10);
+      if(fDesde&&dia&&dia<fDesde)return false;
+      if(fHasta&&dia&&dia>fHasta)return false;
+      return true;
+    });
+  }
+  function renderTabla(rows){
+    const wrap=$('TablaWrap');
+    $('TablaCount').textContent=rows.length;
+    if(!rows.length){wrap.innerHTML='<p class="sub" style="padding:14px">Sin resultados para estos filtros.</p>';return;}
+    const ordenado=rows.slice().sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+    wrap.innerHTML='<table><thead><tr><th>Fecha</th><th>Código</th><th>Equipo</th><th>Destino</th><th class="wrap-txt">Insumo</th><th style="text-align:right">Cant.</th></tr></thead><tbody>'+
+      ordenado.map(r=>{
+        const fechaTxt=(r.fecha||'').replace('T',' ').slice(0,16);
+        const dest=r.proyecto?('🏗️ '+r.proyecto):(r.camioneta?('🚚 '+r.camioneta):'—');
+        return `<tr><td>${esc(fechaTxt)}</td><td>${esc(r.codigo||'—')}</td><td>${esc(estNombreEquipo(r.correo))}</td><td>${esc(dest)}</td><td class="wrap-txt">${esc(r.insumo)}</td><td style="text-align:right">${(+r.cantidad||0).toLocaleString('es-CL')}</td></tr>`;
+      }).join('')+'</tbody></table>';
+  }
+  function exportarCSV(){
+    const rows=ultimaFiltrada;
+    if(!rows.length){alert('No hay datos filtrados para exportar.');return;}
+    const head=['Fecha','Codigo','Equipo/Correo','Proyecto','Camioneta','Insumo','Cantidad'];
+    const lineas=[head.join(';')].concat(rows.map(r=>[r.fecha||'',r.codigo||'',r.correo||'',r.proyecto||'',r.camioneta||'',(r.insumo||'').replace(/;/g,','),r.cantidad||0].join(';')));
+    const blob=new Blob(['\uFEFF'+lineas.join('\n')],{type:'text/csv;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download=cfg.categoria+'_'+new Date().toISOString().slice(0,10)+'.csv';
+    document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  }
+  function renderEst(){
+    const rows=filtradas();
+    ultimaFiltrada=rows;
+    const totalCant=rows.reduce((a,r)=>a+(+r.cantidad||0),0);
+    const nInsumos=estUniq(rows.map(r=>r.insumo)).length;
+    const nSolic=estUniq(rows.map(r=>r.codigo)).length;
+    $('EstKpis').innerHTML=
+      `<div class="est-kpi"><div class="v">${totalCant.toLocaleString('es-CL')}</div><div class="l">Cantidad total</div></div>`+
+      `<div class="est-kpi"><div class="v">${nInsumos}</div><div class="l">Insumos distintos</div></div>`+
+      `<div class="est-kpi"><div class="v">${nSolic}</div><div class="l">Solicitudes</div></div>`+
+      `<div class="est-kpi"><div class="v">${rows.length}</div><div class="l">Líneas</div></div>`;
+    pieSVG(ns+'EstPie',estAgrupa(rows,'insumo'));
+    $('BarProy').innerHTML=estBarrasHTML(estAgrupa(rows.filter(r=>r.proyecto),'proyecto'),'var(--or)',15);
+    const equipoMapa=estAgrupa(rows,'correo');
+    const equipoMapaNombres={};
+    Object.entries(equipoMapa).forEach(([k,v])=>{const nom=estNombreEquipo(k);equipoMapaNombres[nom]=(equipoMapaNombres[nom]||0)+v;});
+    $('BarEquipo').innerHTML=estBarrasHTML(equipoMapaNombres,'#2563EB',15);
+    renderTabla(rows);
+  }
+  function llenarProyeccion(){
+    const sel=$('PInsumo');const cur=sel.value;
+    sel.innerHTML='<option value="">Todos los insumos</option>'+estUniq(estRows.map(r=>r.insumo)).map(v=>`<option>${esc(v)}</option>`).join('');
+    if(cur&&Array.from(sel.options).some(o=>o.value===cur))sel.value=cur;
+  }
+  function setGran(g){
+    proyGran=g;
+    document.querySelectorAll('#'+ns+'PGranBtns .seg').forEach(b=>b.classList.toggle('active',b.dataset.g===g));
+    renderProyeccion();
+  }
+  function renderProyeccion(){
+    const kpis=$('PKpis'),chart=$('PChart'),msg=$('PMsg');
+    if(!kpis||!chart||!msg)return;
+    const insumo=$('PInsumo').value;
+    const rows=insumo?estRows.filter(r=>r.insumo===insumo):estRows;
+    const serie=serieMensualContinua(rows);
+    if(serie.length<2){
+      msg.textContent='Aún no hay histórico suficiente para proyectar (se necesitan al menos 2 meses con datos'+(insumo?' de "'+insumo+'"':'')+').';
+      chart.innerHTML='';kpis.innerHTML='';return;
+    }
+    msg.textContent=serie.length+' meses de histórico: '+monthLabel(serie[0].ym)+' → '+monthLabel(serie[serie.length-1].ym)+(insumo?(' · Insumo: '+insumo):' · Todos los insumos');
+    const reg=regresionLineal(serie.map(s=>s.cantidad));
+    const nextYear=new Date().getFullYear()+1;
+    const proyMeses=[];
+    for(let m=1;m<=12;m++){
+      const ym=nextYear+'-'+String(m).padStart(2,'0');
+      let idx=0,cur=serie[0].ym;while(cur<ym){idx++;cur=addMonths(cur,1);}
+      proyMeses.push({ym,cantidad:Math.max(0,Math.round(reg.intercept+reg.slope*idx)),proj:true});
+    }
+    const histEnt=serie.map(s=>({ym:s.ym,cantidad:s.cantidad,proj:false}));
+    const histAgr=agruparPeriodo(histEnt,proyGran);
+    const proyAgr=agruparPeriodo(proyMeses,proyGran);
+    const totalProyAnual=proyMeses.reduce((a,e)=>a+e.cantidad,0);
+    const promedioMensualProy=Math.round(totalProyAnual/12);
+    const ultimos12=serie.slice(-12).reduce((a,e)=>a+e.cantidad,0);
+    const variacion=ultimos12>0?Math.round((totalProyAnual-ultimos12)/ultimos12*100):null;
+    kpis.innerHTML=
+      `<div class="est-kpi"><div class="v">${totalProyAnual.toLocaleString('es-CL')}</div><div class="l">Proyección ${nextYear} (total)</div></div>`+
+      `<div class="est-kpi"><div class="v">${promedioMensualProy.toLocaleString('es-CL')}</div><div class="l">Promedio mensual proyectado</div></div>`+
+      `<div class="est-kpi"><div class="v">${ultimos12.toLocaleString('es-CL')}</div><div class="l">Últimos 12 meses reales</div></div>`+
+      `<div class="est-kpi"><div class="v" style="color:${variacion==null?'var(--ink)':(variacion>=0?'var(--green)':'var(--nc)')}">${variacion==null?'—':(variacion>0?'+':'')+variacion+'%'}</div><div class="l">Variación vs. últimos 12m</div></div>`;
+    const todos=histAgr.concat(proyAgr);
+    const max=Math.max.apply(null,todos.map(e=>e.cantidad))||1;
+    chart.innerHTML=todos.map(e=>{
+      const pct=Math.round(e.cantidad/max*100);
+      const bg=e.proj?'repeating-linear-gradient(45deg,var(--or) 0 6px,#FBD9C2 6px 12px)':'var(--or)';
+      return `<div class="bar-row"><span class="bn" title="${esc(e.label)}">${esc(e.label)}${e.proj?' <small style="color:var(--muted);font-weight:600">(proy.)</small>':''}</span><div class="bt"><span style="width:${pct}%;background:${bg}"></span></div><span class="bv">${e.cantidad.toLocaleString('es-CL')}</span></div>`;
+    }).join('');
+  }
+  return {init};
+}
+const MOD_EPP=crearModuloListado({ns:'ep',catLabel:'EPP',icon:'🦺',endpointVar:'EPP_ENDPOINT',itemsVar:'EPP_ITEMS',coleccion:'solicitudes_epp',containerId:'sol_epp',categoria:'epp'});
+const MOD_HERR=crearModuloListado({ns:'hr',catLabel:'Herramientas',icon:'🧰',endpointVar:'HERR_ENDPOINT',itemsVar:'HERR_ITEMS',coleccion:'solicitudes_herramientas',containerId:'sol_herr',categoria:'herramientas'});
+
+/* ===================================================================
+   MÓDULO PERMISOS (hora médica / trámites personales / otros)
+   =================================================================== */
+function htmlModuloPermisos(){
+  return `
+  <div class="mat-layout">
+    <div class="card">
+      <h2 style="margin:0 0 4px">🗓️ Solicitud de Permiso</h2>
+      <p class="sub" style="margin:0 0 14px">Avisa una inasistencia. Se envía por correo y se registra en la planilla.</p>
+      <div>
+        <label class="fl">Solicitante</label>
+        <select id="peSolic"></select>
+        <div id="peCorreoAviso" style="display:none;margin-top:6px;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600"></div>
+        <div class="mrow2">
+          <div>
+            <label class="fl">Tipo de permiso</label>
+            <select id="peTipo">
+              <option>Hora médica</option>
+              <option>Trámites personales</option>
+              <option>Otros</option>
+            </select>
+          </div>
+          <div id="peOtroWrap" style="display:none">
+            <label class="fl">Especifica el motivo</label>
+            <input id="peOtroTxt" placeholder="Motivo del permiso" />
+          </div>
+        </div>
+        <div class="mrow2" style="margin-top:16px">
+          <div>
+            <label class="fl">Fecha</label>
+            <input type="date" id="peFecha" />
+          </div>
+          <div>
+            <label class="fl">Horario</label>
+            <div class="segbtns">
+              <button type="button" class="seg active" id="peSegDia">🗓️ Todo el día</button>
+              <button type="button" class="seg" id="peSegParcial">🕐 Desde una hora</button>
+            </div>
+          </div>
+          <div id="peDesdeWrap" style="display:none">
+            <label class="fl">Desde</label>
+            <input type="time" id="peDesde" />
+          </div>
+        </div>
+        <label class="fl" style="margin-top:16px">Observación (opcional)</label>
+        <textarea id="peObs" rows="2" placeholder="Comentario…"></textarea>
+        <div style="margin-top:16px;display:flex;gap:10px;align-items:center">
+          <button type="button" class="btn primary" id="peSend">📨 Enviar solicitud</button>
+          <span id="peMsg" class="sub"></span>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="align-self:start">
+      <h2 style="margin:0 0 10px">🕓 Últimos permisos</h2>
+      <div id="peHist"><p class="sub">—</p></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <h2 style="margin:0">📊 Estadísticas de Permisos</h2>
+      <button class="btn-sec" id="peRefrescar">🔄 Actualizar</button>
+    </div>
+    <p class="sub" id="peEstMsg" style="margin:6px 0 14px">—</p>
+    <div class="est-filtros">
+      <label class="fl">Tipo<select id="peFTipo"></select></label>
+      <label class="fl">Solicitante<select id="peFCorreo"></select></label>
+      <label class="fl">Fecha desde<input type="date" id="peFDesde"></label>
+      <label class="fl">Fecha hasta<input type="date" id="peFHasta"></label>
+      <label class="fl" style="align-self:end"><button class="btn-sec" style="width:100%" id="peLimpiar">✕ Limpiar filtros</button></label>
+    </div>
+    <div class="est-kpis" id="peKpis"></div>
+    <h3 class="est-h">🥧 Distribución por tipo</h3>
+    <div id="pePie"></div>
+    <h3 class="est-h" style="margin-top:18px">🧑‍🔧 Permisos por solicitante</h3>
+    <div id="peBarSolic" class="est-bars"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:18px">
+      <h3 class="est-h" style="margin:0">📋 Detalle <span id="peTablaCount" class="mat-badge">0</span></h3>
+      <button class="btn-sec" id="peExportarCSV">⬇️ Exportar CSV</button>
+    </div>
+    <div class="est-table-wrap" id="peTablaWrap"></div>
+
+    <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--line)">
+      <h3 class="est-h" style="margin:0 0 10px">📈 Tendencia y proyección de permisos</h3>
+      <div class="segbtns" id="pePGranBtns" style="max-width:420px;margin-bottom:12px">
+        <button type="button" class="seg active" data-g="m">Mensual</button>
+        <button type="button" class="seg" data-g="q">Trimestral</button>
+        <button type="button" class="seg" data-g="s">Semestral</button>
+        <button type="button" class="seg" data-g="y">Anual</button>
+      </div>
+      <p class="sub" id="pePMsg" style="margin-bottom:10px">—</p>
+      <div class="est-kpis" id="pePKpis"></div>
+      <div id="pePChart" class="est-bars" style="max-height:none;margin-top:10px"></div>
+    </div>
+  </div>`;
+}
+function crearModuloPermisos(cfg){
+  let ready=false, estRows=[], proyGran='m', ultimaFiltrada=[];
+  const $=id=>document.getElementById('pe'+id);
+  function init(){
+    if(ready){ renderHist(); return; }
+    document.getElementById(cfg.containerId).innerHTML=htmlModuloPermisos();
+    $('Solic').innerHTML='<option value="">— selecciona —</option>'+(window.TECNICOS||[]).map((t,i)=>`<option value="${i}">${esc(t.nombre)}</option>`).join('');
+    document.getElementById('peTipo').addEventListener('change',()=>{
+      document.getElementById('peOtroWrap').style.display=(document.getElementById('peTipo').value==='Otros')?'block':'none';
+    });
+    document.getElementById('peSegDia').addEventListener('click',()=>setHorario(true));
+    document.getElementById('peSegParcial').addEventListener('click',()=>setHorario(false));
+    document.getElementById('peSend').addEventListener('click',enviar);
+    $('Refrescar').addEventListener('click',cargarEstadisticas);
+    $('Limpiar').addEventListener('click',limpiarFiltros);
+    $('ExportarCSV').addEventListener('click',exportarCSV);
+    ['FTipo','FCorreo','FDesde','FHasta'].forEach(id=>$(id).addEventListener('change',renderEst));
+    document.querySelectorAll('#pePGranBtns .seg').forEach(b=>b.addEventListener('click',()=>setGran(b.dataset.g)));
+    ready=true;
+    cargarEstadisticas();
+    renderHist();
+  }
+  function setHorario(todoDia){
+    document.getElementById('peSegDia').classList.toggle('active',todoDia);
+    document.getElementById('peSegParcial').classList.toggle('active',!todoDia);
+    document.getElementById('peDesdeWrap').style.display=todoDia?'none':'block';
+  }
+  async function enviar(){
+    const t=(window.TECNICOS||[])[+document.getElementById('peSolic').value];
+    if(!t){alert('Selecciona el solicitante.');return;}
+    const fecha=document.getElementById('peFecha').value;
+    if(!fecha){alert('Selecciona la fecha del permiso.');return;}
+    const todoDia=document.getElementById('peSegDia').classList.contains('active');
+    const desde=todoDia?'':document.getElementById('peDesde').value;
+    if(!todoDia && !desde){alert('Indica la hora de inicio, o marca "Todo el día".');return;}
+    let tipo=document.getElementById('peTipo').value;
+    if(tipo==='Otros'){
+      const txt=document.getElementById('peOtroTxt').value.trim();
+      if(!txt){alert('Especifica el motivo.');return;}
+      tipo='Otros: '+txt;
+    }
+    const payload={
+      categoria:'permisos',
+      solicitante:t.nombre, correo:t.correo,
+      tipo:tipo, fechaPermiso:fecha,
+      horario: todoDia?'Todo el día':('Desde '+desde),
+      obs:document.getElementById('peObs').value.trim(),
+      fecha:new Date().toLocaleString('es-CL')
+    };
+    const btn=document.getElementById('peSend'),msg=document.getElementById('peMsg');
+    btn.disabled=true;msg.textContent='Enviando…';msg.style.color='var(--muted)';
+    let code='';
+    try{
+      const url=window.PERM_ENDPOINT;
+      if(!url||/PEGA_AQUI/.test(url))throw new Error('Falta configurar el conector de Permisos (Apps Script).');
+      var data=null,sinConfirmar=false;
+      try{
+        const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+        data=await res.json();
+      }catch(networkErr){
+        await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+        sinConfirmar=true;
+      }
+      if(data && !data.ok)throw new Error(data.error||'Respuesta inválida del conector.');
+      code=(data&&data.code)||'';
+      try{ if(window.SafecardSolic) await window.SafecardSolic.save(Object.assign({code},payload),'permisos'); }catch(e){}
+      msg.textContent=sinConfirmar?'✅ Enviado (sin confirmación del servidor)':'✅ Enviado'+(code?(' · '+code):'');
+      msg.style.color='var(--green)';
+      document.getElementById('peObs').value='';
+      document.getElementById('peOtroTxt').value='';document.getElementById('peOtroWrap').style.display='none';
+      renderHist();cargarEstadisticas();
+    }catch(e){
+      msg.textContent='✗ '+(e.message||e);msg.style.color='var(--nc)';
+    }
+    btn.disabled=false;
+  }
+  async function renderHist(){
+    const c=document.getElementById('peHist');if(!c)return;
+    if(!window.SafecardSolic){c.innerHTML='<p class="sub">El historial se verá al conectar la nube.</p>';return;}
+    try{
+      const list=await window.SafecardSolic.list('permisos');
+      if(!list.length){c.innerHTML='<p class="sub">Sin permisos registrados aún.</p>';return;}
+      c.innerHTML=list.slice(0,15).map(s=>`<div class="mhrow"><span class="mh-code">${esc(s.code||'—')}</span><span class="mh-dest"><span class="ico">🗓️</span>${esc(s.solicitante||'')} · ${esc(s.tipo||'')}</span><span class="mh-meta">${esc(s.fechaPermiso||'')} · ${esc(s.horario||'')}</span></div>`).join('');
+    }catch(e){c.innerHTML='<p class="sub">—</p>';}
+  }
+  async function cargarEstadisticas(){
+    const msg=document.getElementById('peEstMsg');msg.textContent='Cargando datos…';
+    try{
+      const url=window.PERM_ENDPOINT;
+      if(!url||/PEGA_AQUI/.test(url))throw new Error('Falta configurar el conector de Permisos (Apps Script).');
+      const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'data',categoria:'permisos'})});
+      const data=await res.json();
+      if(!data||!data.ok)throw new Error((data&&data.error)||'Respuesta inválida');
+      estRows=(data.rows||[]).map(r=>Object.assign({},r,{cantidad:1,insumo:r.tipo,fecha:r.fechaPermiso||r.fecha}));
+      llenarFiltros();renderEst();renderProyeccion();
+      msg.textContent=estRows.length+' permisos cargados.';
+    }catch(e){msg.textContent='No se pudo cargar: '+(e.message||e)+' (revisa que el Apps Script esté reimplementado).';}
+  }
+  function opts(id,vals,label){
+    const el=$(id);const cur=el.value;
+    el.innerHTML='<option value="">'+label+'</option>'+vals.map(v=>`<option>${esc(v)}</option>`).join('');
+    if(cur&&vals.indexOf(cur)>=0)el.value=cur;
+  }
+  function llenarFiltros(){
+    opts('FTipo',estUniq(estRows.map(r=>r.tipo)),'Todos');
+    opts('FCorreo',estUniq(estRows.map(r=>r.correo)),'Todos');
+  }
+  function limpiarFiltros(){
+    ['FTipo','FCorreo','FDesde','FHasta'].forEach(id=>{const e2=$(id);if(e2)e2.value='';});
+    renderEst();
+  }
+  function filtradas(){
+    const ft=$('FTipo').value,fco=$('FCorreo').value,fDesde=$('FDesde').value,fHasta=$('FHasta').value;
+    return estRows.filter(r=>{
+      if(ft&&r.tipo!==ft)return false;
+      if(fco&&r.correo!==fco)return false;
+      const dia=(r.fecha||'').slice(0,10);
+      if(fDesde&&dia&&dia<fDesde)return false;
+      if(fHasta&&dia&&dia>fHasta)return false;
+      return true;
+    });
+  }
+  function renderTabla(rows){
+    const wrap=document.getElementById('peTablaWrap');
+    document.getElementById('peTablaCount').textContent=rows.length;
+    if(!rows.length){wrap.innerHTML='<p class="sub" style="padding:14px">Sin resultados para estos filtros.</p>';return;}
+    const ordenado=rows.slice().sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+    wrap.innerHTML='<table><thead><tr><th>Fecha</th><th>Código</th><th>Solicitante</th><th>Tipo</th><th>Horario</th><th class="wrap-txt">Observación</th></tr></thead><tbody>'+
+      ordenado.map(r=>`<tr><td>${esc(r.fecha||'')}</td><td>${esc(r.codigo||'—')}</td><td>${esc(estNombreEquipo(r.correo))}</td><td>${esc(r.tipo||'')}</td><td>${esc(r.horario||'')}</td><td class="wrap-txt">${esc(r.obs||'')}</td></tr>`).join('')+'</tbody></table>';
+  }
+  function exportarCSV(){
+    const rows=ultimaFiltrada;
+    if(!rows.length){alert('No hay datos filtrados para exportar.');return;}
+    const head=['Fecha','Codigo','Solicitante','Correo','Tipo','Horario','Observacion'];
+    const lineas=[head.join(';')].concat(rows.map(r=>[r.fecha||'',r.codigo||'',estNombreEquipo(r.correo),r.correo||'',r.tipo||'',r.horario||'',(r.obs||'').replace(/;/g,',')].join(';')));
+    const blob=new Blob(['\uFEFF'+lineas.join('\n')],{type:'text/csv;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='permisos_'+new Date().toISOString().slice(0,10)+'.csv';
+    document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  }
+  function renderEst(){
+    const rows=filtradas();
+    ultimaFiltrada=rows;
+    const porTipo=estAgrupa(rows,'tipo');
+    document.getElementById('peKpis').innerHTML=
+      `<div class="est-kpi"><div class="v">${rows.length}</div><div class="l">Total permisos</div></div>`+
+      `<div class="est-kpi"><div class="v">${porTipo['Hora médica']||0}</div><div class="l">Hora médica</div></div>`+
+      `<div class="est-kpi"><div class="v">${porTipo['Trámites personales']||0}</div><div class="l">Trámites personales</div></div>`+
+      `<div class="est-kpi"><div class="v">${estUniq(rows.map(r=>r.correo)).length}</div><div class="l">Personas distintas</div></div>`;
+    pieSVG('pePie',porTipo);
+    const porSolicMapa=estAgrupa(rows,'correo');
+    const porSolicNombres={};
+    Object.entries(porSolicMapa).forEach(([k,v])=>{const nom=estNombreEquipo(k);porSolicNombres[nom]=(porSolicNombres[nom]||0)+v;});
+    document.getElementById('peBarSolic').innerHTML=estBarrasHTML(porSolicNombres,'var(--or)',15);
+    renderTabla(rows);
+  }
+  function setGran(g){
+    proyGran=g;
+    document.querySelectorAll('#pePGranBtns .seg').forEach(b=>b.classList.toggle('active',b.dataset.g===g));
+    renderProyeccion();
+  }
+  function renderProyeccion(){
+    const kpis=document.getElementById('pePKpis'),chart=document.getElementById('pePChart'),msg=document.getElementById('pePMsg');
+    if(!kpis||!chart||!msg)return;
+    const serie=serieMensualContinua(estRows);
+    if(serie.length<2){
+      msg.textContent='Aún no hay histórico suficiente para proyectar (se necesitan al menos 2 meses con datos).';
+      chart.innerHTML='';kpis.innerHTML='';return;
+    }
+    msg.textContent=serie.length+' meses de histórico: '+monthLabel(serie[0].ym)+' → '+monthLabel(serie[serie.length-1].ym);
+    const reg=regresionLineal(serie.map(s=>s.cantidad));
+    const nextYear=new Date().getFullYear()+1;
+    const proyMeses=[];
+    for(let m=1;m<=12;m++){
+      const ym=nextYear+'-'+String(m).padStart(2,'0');
+      let idx=0,cur=serie[0].ym;while(cur<ym){idx++;cur=addMonths(cur,1);}
+      proyMeses.push({ym,cantidad:Math.max(0,Math.round(reg.intercept+reg.slope*idx)),proj:true});
+    }
+    const histEnt=serie.map(s=>({ym:s.ym,cantidad:s.cantidad,proj:false}));
+    const histAgr=agruparPeriodo(histEnt,proyGran);
+    const proyAgr=agruparPeriodo(proyMeses,proyGran);
+    const totalProyAnual=proyMeses.reduce((a,e)=>a+e.cantidad,0);
+    kpis.innerHTML=
+      `<div class="est-kpi"><div class="v">${totalProyAnual.toLocaleString('es-CL')}</div><div class="l">Proyección ${nextYear} (total permisos)</div></div>`+
+      `<div class="est-kpi"><div class="v">${Math.round(totalProyAnual/12)}</div><div class="l">Promedio mensual proyectado</div></div>`;
+    const todos=histAgr.concat(proyAgr);
+    const max=Math.max.apply(null,todos.map(e=>e.cantidad))||1;
+    chart.innerHTML=todos.map(e=>{
+      const pct=Math.round(e.cantidad/max*100);
+      const bg=e.proj?'repeating-linear-gradient(45deg,var(--or) 0 6px,#FBD9C2 6px 12px)':'var(--or)';
+      return `<div class="bar-row"><span class="bn" title="${esc(e.label)}">${esc(e.label)}${e.proj?' <small style="color:var(--muted);font-weight:600">(proy.)</small>':''}</span><div class="bt"><span style="width:${pct}%;background:${bg}"></span></div><span class="bv">${e.cantidad.toLocaleString('es-CL')}</span></div>`;
+    }).join('');
+  }
+  return {init};
+}
+const MOD_PERM=crearModuloPermisos({containerId:'sol_permisos'});
+
 </script>
 
 <script type="module">
@@ -1739,8 +2472,8 @@ else{
     window.__dataReady=true; if(window.revealPanel)window.revealPanel();
     window.SafecardDelete=async(id)=>{ await deleteDoc(doc(db,'proyectos',id)); };
     window.SafecardSolic={
-      save:async(s)=>{ const id='scm_'+Date.now(); await setDoc(doc(db,'solicitudes',id),Object.assign({},s,{createdAt:serverTimestamp()})); },
-      list:async()=>{ const {getDocs}=await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js"); const q=await getDocs(collection(db,'solicitudes')); const out=[]; q.forEach(d=>out.push(d.data())); return out.sort((a,b)=>((b.createdAt&&b.createdAt.seconds)||0)-((a.createdAt&&a.createdAt.seconds)||0)); }
+      save:async(s,coleccion)=>{ const col=coleccion||'solicitudes'; const id='scm_'+Date.now(); await setDoc(doc(db,col,id),Object.assign({},s,{createdAt:serverTimestamp()})); },
+      list:async(coleccion)=>{ const col=coleccion||'solicitudes'; const {getDocs}=await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js"); const q=await getDocs(collection(db,col)); const out=[]; q.forEach(d=>out.push(d.data())); return out.sort((a,b)=>((b.createdAt&&b.createdAt.seconds)||0)-((a.createdAt&&a.createdAt.seconds)||0)); }
     };
     window.SafecardSaveFin=async(id,data)=>{ await setDoc(doc(db,'proyectos',id),Object.assign({},data,{finUpdatedAt:serverTimestamp()}),{merge:true}); };
     onSnapshot(query(collection(db,'proyectos')),(snap)=>{
