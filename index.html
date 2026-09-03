@@ -1113,12 +1113,17 @@ async function renderMatHist(){
 
 /* ===== MODAL DE RECEPCIÓN (verificar stock real al retirar en bodega) ===== */
 let RECEP_STATE=null;
-function abrirRecepcion(code){
-  const s=MAT_HIST_LIST.find(x=>x.code===code);
+const RECEP_MODULES={}; // registro: categoria -> {getHistList, endpointVar, coleccion, categoria, refresh}
+RECEP_MODULES.materiales={getHistList:()=>MAT_HIST_LIST,endpointVar:'SCM_ENDPOINT',coleccion:'solicitudes',categoria:null,refresh:renderMatHist};
+function abrirRecepcion(code){ abrirRecepcionGenerica('materiales',code); }
+function abrirRecepcionGenerica(modKey,code){
+  const ctx=RECEP_MODULES[modKey];
+  if(!ctx){alert('Módulo no reconocido.');return;}
+  const s=ctx.getHistList().find(x=>x.code===code);
   if(!s){alert('No se encontró esa solicitud.');return;}
   const prevItems=(s.recepcion&&s.recepcion.items)||[];
   RECEP_STATE={
-    code:s.code, docId:s._docId, destino:s.destino||'',
+    modKey, code:s.code, destino:s.destino||s.solicitante||'',
     items:(s.articulos||[]).map(a=>{
       const prev=prevItems.find(p=>p.articulo===a.articulo);
       const cantidadSolicitada=Number(a.cantidad)||0;
@@ -1131,7 +1136,7 @@ function abrirRecepcion(code){
     })
   };
   document.getElementById('recepTitulo').textContent='Confirmar recepción — '+s.code;
-  document.getElementById('recepSub').textContent=s.destino||'';
+  document.getElementById('recepSub').textContent=s.destino||s.solicitante||'';
   document.getElementById('recepMsg').textContent='';
   renderRecepBody();
   document.getElementById('recepBackdrop').style.display='flex';
@@ -1163,18 +1168,21 @@ function recepCambiarCantidad(i,val){
 async function guardarRecepcion(){
   const faltan=RECEP_STATE.items.filter(it=>!it.estado);
   if(faltan.length){alert('Marca ✓ (recibido) o ✕ (sin stock) para cada artículo antes de guardar.');return;}
+  const ctx=RECEP_MODULES[RECEP_STATE.modKey];
   const msg=document.getElementById('recepMsg'),btn=document.getElementById('recepGuardar');
   btn.disabled=true;msg.textContent='Guardando…';msg.style.color='var(--muted)';
   try{
-    if(!window.SCM_ENDPOINT||/PEGA_AQUI/.test(window.SCM_ENDPOINT))throw new Error('Falta configurar el conector (Apps Script).');
+    const url=window[ctx.endpointVar];
+    if(!url||/PEGA_AQUI/.test(url))throw new Error('Falta configurar el conector (Apps Script).');
     const payload={action:'confirmar',codigo:RECEP_STATE.code,articulos:RECEP_STATE.items.map(it=>({articulo:it.articulo,cantidadRecibida:it.estado==='Recibido'?it.cantidadRecibida:0,estado:it.estado}))};
-    const res=await fetch(window.SCM_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+    if(ctx.categoria)payload.categoria=ctx.categoria;
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
     const data=await res.json();
     if(!data||!data.ok)throw new Error((data&&data.error)||'Respuesta inválida del conector.');
     const sinStock=RECEP_STATE.items.filter(it=>it.estado==='Sin stock').length;
-    try{ if(window.SafecardSolic&&window.SafecardSolic.updateByCode) await window.SafecardSolic.updateByCode('solicitudes',RECEP_STATE.code,{recepcion:{items:RECEP_STATE.items,sinStock,fecha:new Date().toLocaleString('es-CL')}}); }catch(e){}
+    try{ if(window.SafecardSolic&&window.SafecardSolic.updateByCode) await window.SafecardSolic.updateByCode(ctx.coleccion,RECEP_STATE.code,{recepcion:{items:RECEP_STATE.items,sinStock,fecha:new Date().toLocaleString('es-CL')}}); }catch(e){}
     msg.textContent='✅ Recepción guardada.';msg.style.color='var(--green)';
-    await renderMatHist();
+    await ctx.refresh();
     setTimeout(cerrarRecepcion,700);
   }catch(e){
     msg.textContent='✗ '+(e.message||e);msg.style.color='var(--nc)';
@@ -2014,6 +2022,8 @@ function htmlModuloListado(cfg){
     <div id="${ns}EstPie"></div>
     <h3 class="est-h" style="margin-top:18px">🧑‍🔧 Cantidad por técnico</h3>
     <div id="${ns}BarEquipo" class="est-bars"></div>
+    <h3 class="est-h" style="margin-top:18px">🚨 Informe para bodega — insumos con quiebre de stock (N° de veces marcado "sin stock")</h3>
+    <div id="${ns}BarQuiebre" class="est-bars"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:18px">
       <h3 class="est-h" style="margin:0">📋 Detalle <span id="${ns}TablaCount" class="mat-badge">0</span></h3>
       <button class="btn-sec" id="${ns}ExportarCSV">⬇️ Exportar CSV</button>
@@ -2044,13 +2054,14 @@ function htmlModuloListado(cfg){
 
 function crearModuloListado(cfg){
   const ns=cfg.ns;
-  let ready=false, estRows=[], proyGran='m', ultimaFiltrada=[];
+  let ready=false, estRows=[], proyGran='m', ultimaFiltrada=[], histList=[];
   const $=id=>document.getElementById(ns+id);
 
   function init(){
     if(ready){ renderHist(); return; }
     document.getElementById(cfg.containerId).innerHTML=htmlModuloListado(cfg);
     mejorarSelects(document.getElementById(cfg.containerId));
+    RECEP_MODULES[cfg.categoria]={getHistList:()=>histList,endpointVar:cfg.endpointVar,coleccion:cfg.coleccion,categoria:cfg.categoria,refresh:renderHist};
     $('List').innerHTML=(window[cfg.itemsVar]||[]).map(m=>`<option value="${esc(m)}">`).join('');
     $('Solic').innerHTML='<option value="">— selecciona —</option>'+((window.TECNICOS_TODOS||window.TECNICOS||[])).map((t,i)=>`<option value="${i}">${esc(t.nombre)}</option>`).join('');
     $('Solic').addEventListener('change',solicChange);
@@ -2149,8 +2160,17 @@ function crearModuloListado(cfg){
     if(!window.SafecardSolic){c.innerHTML='<p class="sub">El historial se verá al conectar la nube.</p>';return;}
     try{
       const list=await window.SafecardSolic.list(cfg.coleccion);
+      histList=list;
       if(!list.length){c.innerHTML='<p class="sub">Sin solicitudes aún.</p>';return;}
-      c.innerHTML=list.slice(0,15).map(s=>`<div class="mhrow"><span class="mh-code">${esc(s.code||'—')}</span><span class="mh-dest"><span class="ico">${cfg.icon}</span>${esc(s.solicitante||'')}</span><span class="mh-meta">${esc((s.articulos||[]).length)} art. · ${esc(s.fecha||'')}</span></div>`).join('');
+      c.innerHTML=list.slice(0,15).map(s=>{
+        const rec=s.recepcion;
+        let badge='';
+        if(rec){
+          if(rec.sinStock>0)badge=`<span class="mh-badge mh-badge-warn">⚠️ ${rec.sinStock} sin stock</span>`;
+          else badge='<span class="mh-badge mh-badge-ok">✅ Recibido</span>';
+        }
+        return `<div class="mhrow mhrow-click" onclick="abrirRecepcionGenerica('${cfg.categoria}','${esc(s.code||'')}')"><span class="mh-code">${esc(s.code||'—')}</span><span class="mh-dest"><span class="ico">${cfg.icon}</span>${esc(s.solicitante||'')}</span><span class="mh-meta">${esc((s.articulos||[]).length)} art. · ${esc(s.fecha||'')}${badge}</span><span class="mh-arrow">›</span></div>`;
+      }).join('');
     }catch(e){c.innerHTML='<p class="sub">—</p>';}
   }
   function abrirEstadisticas(){
@@ -2166,7 +2186,13 @@ function crearModuloListado(cfg){
       const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'data',categoria:cfg.categoria})});
       const data=await res.json();
       if(!data||!data.ok)throw new Error((data&&data.error)||'Respuesta inválida');
-      estRows=(data.rows||[]).map(r=>Object.assign({},r,{mes:(r.fecha||'').slice(0,7)}));
+      estRows=(data.rows||[]).map(r=>{
+        const estado=String(r.estado||'').trim();
+        const cantidadEfectiva = estado==='Recibido' ? (Number(r.cantidadRecibida)||0)
+                                : estado==='Sin stock' ? 0
+                                : (+r.cantidad||0);
+        return Object.assign({},r,{mes:(r.fecha||'').slice(0,7),estado,cantidadEfectiva});
+      });
       llenarFiltros();renderEst();
       llenarProyeccion();renderProyeccion();
       msg.textContent=estRows.length+' líneas cargadas.';
@@ -2202,17 +2228,20 @@ function crearModuloListado(cfg){
     $('TablaCount').textContent=rows.length;
     if(!rows.length){wrap.innerHTML='<p class="sub" style="padding:14px">Sin resultados para estos filtros.</p>';return;}
     const ordenado=rows.slice().sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
-    wrap.innerHTML='<table><thead><tr><th>Fecha</th><th>Código</th><th>Técnico</th><th class="wrap-txt">Insumo</th><th style="text-align:right">Cant.</th></tr></thead><tbody>'+
+    wrap.innerHTML='<table><thead><tr><th>Fecha</th><th>Código</th><th>Técnico</th><th class="wrap-txt">Insumo</th><th style="text-align:right">Solicitado</th><th style="text-align:right">Recibido</th><th>Estado</th></tr></thead><tbody>'+
       ordenado.map(r=>{
         const fechaTxt=(r.fecha||'').replace('T',' ').slice(0,16);
-        return `<tr><td>${esc(fechaTxt)}</td><td>${esc(r.codigo||'—')}</td><td>${esc(estNombreEquipo(r.correo))}</td><td class="wrap-txt">${esc(r.insumo)}</td><td style="text-align:right">${(+r.cantidad||0).toLocaleString('es-CL')}</td></tr>`;
+        const estadoTxt=r.estado==='Recibido'?'✅ Recibido':r.estado==='Sin stock'?'⚠️ Sin stock':'⏳ Sin confirmar';
+        const estadoColor=r.estado==='Recibido'?'var(--green)':r.estado==='Sin stock'?'var(--nc)':'var(--pc)';
+        const recibidoTxt=r.estado?((r.cantidadEfectiva!=null?r.cantidadEfectiva:0)).toLocaleString('es-CL'):'—';
+        return `<tr><td>${esc(fechaTxt)}</td><td>${esc(r.codigo||'—')}</td><td>${esc(estNombreEquipo(r.correo))}</td><td class="wrap-txt">${esc(r.insumo)}</td><td style="text-align:right">${(+r.cantidad||0).toLocaleString('es-CL')}</td><td style="text-align:right">${recibidoTxt}</td><td style="color:${estadoColor};font-weight:600">${estadoTxt}</td></tr>`;
       }).join('')+'</tbody></table>';
   }
   function exportarCSV(){
     const rows=ultimaFiltrada;
     if(!rows.length){alert('No hay datos filtrados para exportar.');return;}
-    const head=['Fecha','Codigo','Tecnico','Correo','Insumo','Cantidad'];
-    const lineas=[head.join(';')].concat(rows.map(r=>[r.fecha||'',r.codigo||'',estNombreEquipo(r.correo),r.correo||'',(r.insumo||'').replace(/;/g,','),r.cantidad||0].join(';')));
+    const head=['Fecha','Codigo','Tecnico','Correo','Insumo','CantidadSolicitada','CantidadRecibida','Estado'];
+    const lineas=[head.join(';')].concat(rows.map(r=>[r.fecha||'',r.codigo||'',estNombreEquipo(r.correo),r.correo||'',(r.insumo||'').replace(/;/g,','),r.cantidad||0,r.cantidadEfectiva!=null?r.cantidadEfectiva:'',r.estado||'Sin confirmar'].join(';')));
     const blob=new Blob(['\uFEFF'+lineas.join('\n')],{type:'text/csv;charset=utf-8'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');a.href=url;a.download=cfg.categoria+'_'+new Date().toISOString().slice(0,10)+'.csv';
@@ -2221,19 +2250,26 @@ function crearModuloListado(cfg){
   function renderEst(){
     const rows=filtradas();
     ultimaFiltrada=rows;
-    const totalCant=rows.reduce((a,r)=>a+(+r.cantidad||0),0);
+    const totalCant=rows.reduce((a,r)=>a+(r.cantidadEfectiva!=null?r.cantidadEfectiva:(+r.cantidad||0)),0);
     const nInsumos=estUniq(rows.map(r=>r.insumo)).length;
     const nSolic=estUniq(rows.map(r=>r.codigo)).length;
+    const nSinStock=rows.filter(r=>r.estado==='Sin stock').length;
+    const nPendientes=rows.filter(r=>!r.estado).length;
     $('EstKpis').innerHTML=
-      `<div class="est-kpi"><div class="v">${totalCant.toLocaleString('es-CL')}</div><div class="l">Cantidad total</div></div>`+
+      `<div class="est-kpi"><div class="v">${totalCant.toLocaleString('es-CL')}</div><div class="l">Cantidad recibida real</div></div>`+
       `<div class="est-kpi"><div class="v">${nInsumos}</div><div class="l">Insumos distintos</div></div>`+
       `<div class="est-kpi"><div class="v">${nSolic}</div><div class="l">Solicitudes</div></div>`+
-      `<div class="est-kpi"><div class="v">${rows.length}</div><div class="l">Líneas</div></div>`;
+      `<div class="est-kpi"><div class="v" style="color:${nSinStock?'var(--nc)':'var(--ink)'}">${nSinStock}</div><div class="l">Líneas con quiebre de stock</div></div>`+
+      `<div class="est-kpi"><div class="v" style="color:${nPendientes?'var(--pc)':'var(--ink)'}">${nPendientes}</div><div class="l">Líneas sin confirmar recepción</div></div>`;
     pieSVG(ns+'EstPie',estAgrupa(rows,'insumo'));
     const equipoMapa=estAgrupa(rows,'correo');
     const equipoMapaNombres={};
     Object.entries(equipoMapa).forEach(([k,v])=>{const nom=estNombreEquipo(k);equipoMapaNombres[nom]=(equipoMapaNombres[nom]||0)+v;});
     $('BarEquipo').innerHTML=estBarrasHTML(equipoMapaNombres,'var(--or)',15);
+    const quiebreMapa={};
+    rows.filter(r=>r.estado==='Sin stock').forEach(r=>{quiebreMapa[r.insumo||'—']=(quiebreMapa[r.insumo||'—']||0)+1;});
+    const quiebreWrap=$('BarQuiebre');
+    if(quiebreWrap)quiebreWrap.innerHTML=estBarrasHTML(quiebreMapa,'var(--nc)',15);
     renderTabla(rows);
   }
   function llenarProyeccion(){
@@ -2343,15 +2379,18 @@ function htmlModuloPermisos(){
       </div>
     </div>
     <div class="card" style="align-self:start">
-      <h2 style="margin:0 0 10px">🕓 Últimos permisos</h2>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <h2 style="margin:0">🕓 Últimos permisos</h2>
+        <button class="btn-sec" id="peAbrirEst">📊 Estadísticas</button>
+      </div>
       <div id="peHist"><p class="sub">—</p></div>
     </div>
   </div>
 
-  <div class="card" style="margin-top:16px">
+  <div id="peEstWrap" class="card" style="margin-top:16px;display:none">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <h2 style="margin:0">📊 Estadísticas de Permisos</h2>
-      <button class="btn-sec" id="peRefrescar">🔄 Actualizar</button>
+      <div><button class="btn-sec" id="peRefrescar">🔄 Actualizar</button> <button class="btn-sec" id="peCerrar">✕ Cerrar</button></div>
     </div>
     <p class="sub" id="peEstMsg" style="margin:6px 0 14px">—</p>
     <div class="est-filtros">
@@ -2400,14 +2439,20 @@ function crearModuloPermisos(cfg){
     document.getElementById('peSegDia').addEventListener('click',()=>setHorario(true));
     document.getElementById('peSegParcial').addEventListener('click',()=>setHorario(false));
     document.getElementById('peSend').addEventListener('click',enviar);
+    $('AbrirEst').addEventListener('click',abrirEstadisticas);
     $('Refrescar').addEventListener('click',cargarEstadisticas);
+    $('Cerrar').addEventListener('click',()=>{$('EstWrap').style.display='none';});
     $('Limpiar').addEventListener('click',limpiarFiltros);
     $('ExportarCSV').addEventListener('click',exportarCSV);
     ['FTipo','FCorreo','FDesde','FHasta'].forEach(id=>$(id).addEventListener('change',renderEst));
     document.querySelectorAll('#pePGranBtns .seg').forEach(b=>b.addEventListener('click',()=>setGran(b.dataset.g)));
     ready=true;
-    cargarEstadisticas();
     renderHist();
+  }
+  function abrirEstadisticas(){
+    $('EstWrap').style.display='block';
+    if(!estRows.length)cargarEstadisticas();
+    $('EstWrap').scrollIntoView({behavior:'smooth'});
   }
   function setHorario(todoDia){
     document.getElementById('peSegDia').classList.toggle('active',todoDia);
@@ -2457,7 +2502,7 @@ function crearModuloPermisos(cfg){
       msg.style.color='var(--green)';
       document.getElementById('peObs').value='';
       document.getElementById('peOtroTxt').value='';document.getElementById('peOtroWrap').style.display='none';
-      renderHist();cargarEstadisticas();
+      renderHist();
     }catch(e){
       msg.textContent='✗ '+(e.message||e);msg.style.color='var(--nc)';
     }
