@@ -807,26 +807,21 @@ async function matEnviar(){
   let code='';
   try{
     if(!window.SCM_ENDPOINT||/PEGA_AQUI/.test(window.SCM_ENDPOINT)) throw new Error('Falta configurar el conector de correo/planilla (Apps Script).');
-    var data=null, sinConfirmar=false;
+    var data=null;
     try{
       const res=await fetch(window.SCM_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
       data=await res.json();
     }catch(networkErr){
-      // "Failed to fetch": típico cuando Apps Script redirige internamente a
-      // script.googleusercontent.com para servir la respuesta y el navegador no
-      // logra leerla por CORS, aunque el servidor SÍ procesó la solicitud.
-      // Reintentamos en modo no-cors para asegurar el envío (correo + planilla),
-      // aunque no podamos leer el código de vuelta.
-      await fetch(window.SCM_ENDPOINT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
-      sinConfirmar=true;
+      // No reintentamos automáticamente: si el servidor ya procesó la solicitud
+      // (aunque el navegador no haya podido leer la respuesta), reenviar acá
+      // generaría una solicitud duplicada en la planilla.
+      throw new Error('No se pudo confirmar el envío por un problema de red. Antes de volver a intentarlo, revisa "Últimas solicitudes" en unos segundos para asegurarte de que no quedó guardada igual.');
     }
     if(data && !data.ok) throw new Error(data.error||'Respuesta inválida del conector.');
     code=(data&&data.code)||'';
     // guardar historial en Firestore
     try{ if(window.SafecardSolic) await window.SafecardSolic.save(Object.assign({code},payload)); }catch(e){}
-    msg.textContent = sinConfirmar
-      ? '✅ Enviado (sin confirmación del servidor — revisa la planilla en un minuto)'
-      : '✅ Enviado'+(code?(' · '+code):'');
+    msg.textContent='✅ Enviado'+(code?(' · '+code):'');
     msg.style.color='var(--green)';
     document.getElementById('mObs').value='';document.getElementById('mItems').innerHTML='';matAddItem();
     document.getElementById('mProyectoManual').value='';document.getElementById('mProyectoManual').style.display='none';
@@ -1090,25 +1085,49 @@ function renderProyeccion(){
   }).join('');
 }
 let MAT_HIST_LIST=[];
+async function historialMatDesdeSheet(){
+  const url=window.SCM_ENDPOINT;
+  if(!url||/PEGA_AQUI/.test(url))return [];
+  const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'data'})});
+  const data=await res.json();
+  if(!data||!data.ok)return [];
+  const porCodigo={};
+  (data.rows||[]).forEach(r=>{
+    const cod=r.codigo||'—';
+    if(!porCodigo[cod])porCodigo[cod]={code:cod,correo:r.correo,fecha:r.fecha,proyecto:r.proyecto,camioneta:r.camioneta,articulos:[],sinStock:0,algunaConfirmada:false};
+    porCodigo[cod].articulos.push({articulo:r.insumo,cantidad:r.cantidad});
+    if(r.estado==='Sin stock')porCodigo[cod].sinStock++;
+    if(r.estado==='Recibido')porCodigo[cod].algunaConfirmada=true;
+  });
+  return Object.values(porCodigo).map(s=>({
+    code:s.code, correo:s.correo, fecha:s.fecha,
+    destino: s.camioneta ? ('Camioneta '+s.camioneta) : (s.proyecto ? ('Proyecto '+s.proyecto) : ''),
+    articulos:s.articulos,
+    recepcion:(s.sinStock>0||s.algunaConfirmada)?{sinStock:s.sinStock}:null
+  })).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+}
 async function renderMatHist(){
   const c=document.getElementById('matHist');if(!c)return;
-  if(!window.SafecardSolic){c.innerHTML='<p class="sub">El historial se verá al conectar la nube.</p>';return;}
-  try{
-    const list=await window.SafecardSolic.list();
-    MAT_HIST_LIST=list;
-    if(!list.length){c.innerHTML='<p class="sub">Sin solicitudes aún.</p>';return;}
-    c.innerHTML=list.slice(0,15).map(s=>{
-      const esCamioneta=/camioneta/i.test(s.destino||'');
-      const ico=esCamioneta?'🚚':'🏗️';
-      const rec=s.recepcion;
-      let badge='';
-      if(rec){
-        if(rec.sinStock>0)badge=`<span class="mh-badge mh-badge-warn">⚠️ ${rec.sinStock} sin stock</span>`;
-        else badge='<span class="mh-badge mh-badge-ok">✅ Recibido</span>';
-      }
-      return `<div class="mhrow mhrow-click" onclick="abrirRecepcion('${esc(s.code||'')}')"><span class="mh-code">${esc(s.code||'—')}</span><span class="mh-dest"><span class="ico">${ico}</span>${esc(s.destino||'')}</span><span class="mh-meta">${esc((s.articulos||[]).length)} art. · ${esc(s.fecha||'')}${badge}</span><span class="mh-arrow">›</span></div>`;
-    }).join('');
-  }catch(e){c.innerHTML='<p class="sub">—</p>';}
+  // La planilla es la fuente de verdad (confirmada siempre correcta); Firestore
+  // es solo un respaldo si por algún motivo falla la lectura de la planilla.
+  let list=[];
+  try{ list=await historialMatDesdeSheet(); }catch(e){ list=[]; }
+  if(!list.length && window.SafecardSolic){
+    try{ list=await window.SafecardSolic.list(); }catch(e){}
+  }
+  MAT_HIST_LIST=list;
+  if(!list.length){c.innerHTML='<p class="sub">Sin solicitudes aún.</p>';return;}
+  c.innerHTML=list.slice(0,15).map(s=>{
+    const esCamioneta=/camioneta/i.test(s.destino||'');
+    const ico=esCamioneta?'🚚':'🏗️';
+    const rec=s.recepcion;
+    let badge='';
+    if(rec){
+      if(rec.sinStock>0)badge=`<span class="mh-badge mh-badge-warn">⚠️ ${rec.sinStock} sin stock</span>`;
+      else badge='<span class="mh-badge mh-badge-ok">✅ Recibido</span>';
+    }
+    return `<div class="mhrow mhrow-click" onclick="abrirRecepcion('${esc(s.code||'')}')"><span class="mh-code">${esc(s.code||'—')}</span><span class="mh-dest"><span class="ico">${ico}</span>${esc(s.destino||'')}</span><span class="mh-meta">${esc((s.articulos||[]).length)} art. · ${esc(s.fecha||'')}${badge}</span><span class="mh-arrow">›</span></div>`;
+  }).join('');
 }
 
 /* ===== MODAL DE RECEPCIÓN (verificar stock real al retirar en bodega) ===== */
@@ -2135,18 +2154,17 @@ function crearModuloListado(cfg){
     try{
       const url=window[cfg.endpointVar];
       if(!url||/PEGA_AQUI/.test(url))throw new Error('Falta configurar el conector de '+cfg.catLabel+' (Apps Script).');
-      var data=null, sinConfirmar=false;
+      var data=null;
       try{
         const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
         data=await res.json();
       }catch(networkErr){
-        await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
-        sinConfirmar=true;
+        throw new Error('No se pudo confirmar el envío por un problema de red. Antes de volver a intentarlo, revisa "Últimas solicitudes" en unos segundos para asegurarte de que no quedó guardada igual.');
       }
       if(data && !data.ok)throw new Error(data.error||'Respuesta inválida del conector.');
       code=(data&&data.code)||'';
       try{ if(window.SafecardSolic) await window.SafecardSolic.save(Object.assign({code},payload),cfg.coleccion); }catch(e){}
-      msg.textContent=sinConfirmar?'✅ Enviado (sin confirmación del servidor — revisa la planilla en un minuto)':'✅ Enviado'+(code?(' · '+code):'');
+      msg.textContent='✅ Enviado'+(code?(' · '+code):'');
       msg.style.color='var(--green)';
       $('Obs').value='';$('Items').innerHTML='';addItem();
       renderHist();
@@ -2155,23 +2173,45 @@ function crearModuloListado(cfg){
     }
     btn.disabled=false;
   }
+  async function historialDesdeSheet(){
+    const url=window[cfg.endpointVar];
+    if(!url||/PEGA_AQUI/.test(url))return [];
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'data',categoria:cfg.categoria})});
+    const data=await res.json();
+    if(!data||!data.ok)return [];
+    const porCodigo={};
+    (data.rows||[]).forEach(r=>{
+      const cod=r.codigo||'—';
+      if(!porCodigo[cod])porCodigo[cod]={code:cod,correo:r.correo,fecha:r.fecha,articulos:[],sinStock:0,algunaConfirmada:false};
+      porCodigo[cod].articulos.push({articulo:r.insumo,cantidad:r.cantidad});
+      if(r.estado==='Sin stock')porCodigo[cod].sinStock++;
+      if(r.estado==='Recibido')porCodigo[cod].algunaConfirmada=true;
+    });
+    return Object.values(porCodigo).map(s=>({
+      code:s.code, correo:s.correo, fecha:s.fecha, solicitante:estNombreEquipo(s.correo),
+      articulos:s.articulos,
+      recepcion:(s.sinStock>0||s.algunaConfirmada)?{sinStock:s.sinStock}:null
+    })).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  }
   async function renderHist(){
     const c=$('Hist');if(!c)return;
-    if(!window.SafecardSolic){c.innerHTML='<p class="sub">El historial se verá al conectar la nube.</p>';return;}
-    try{
-      const list=await window.SafecardSolic.list(cfg.coleccion);
-      histList=list;
-      if(!list.length){c.innerHTML='<p class="sub">Sin solicitudes aún.</p>';return;}
-      c.innerHTML=list.slice(0,15).map(s=>{
-        const rec=s.recepcion;
-        let badge='';
-        if(rec){
-          if(rec.sinStock>0)badge=`<span class="mh-badge mh-badge-warn">⚠️ ${rec.sinStock} sin stock</span>`;
-          else badge='<span class="mh-badge mh-badge-ok">✅ Recibido</span>';
-        }
-        return `<div class="mhrow mhrow-click" onclick="abrirRecepcionGenerica('${cfg.categoria}','${esc(s.code||'')}')"><span class="mh-code">${esc(s.code||'—')}</span><span class="mh-dest"><span class="ico">${cfg.icon}</span>${esc(s.solicitante||'')}</span><span class="mh-meta">${esc((s.articulos||[]).length)} art. · ${esc(s.fecha||'')}${badge}</span><span class="mh-arrow">›</span></div>`;
-      }).join('');
-    }catch(e){c.innerHTML='<p class="sub">—</p>';}
+    // La planilla es la fuente de verdad; Firestore es solo respaldo si falla la lectura.
+    let list=[];
+    try{ list=await historialDesdeSheet(); }catch(e){ list=[]; }
+    if(!list.length && window.SafecardSolic){
+      try{ list=await window.SafecardSolic.list(cfg.coleccion); }catch(e){}
+    }
+    histList=list;
+    if(!list.length){c.innerHTML='<p class="sub">Sin solicitudes aún.</p>';return;}
+    c.innerHTML=list.slice(0,15).map(s=>{
+      const rec=s.recepcion;
+      let badge='';
+      if(rec){
+        if(rec.sinStock>0)badge=`<span class="mh-badge mh-badge-warn">⚠️ ${rec.sinStock} sin stock</span>`;
+        else badge='<span class="mh-badge mh-badge-ok">✅ Recibido</span>';
+      }
+      return `<div class="mhrow mhrow-click" onclick="abrirRecepcionGenerica('${cfg.categoria}','${esc(s.code||'')}')"><span class="mh-code">${esc(s.code||'—')}</span><span class="mh-dest"><span class="ico">${cfg.icon}</span>${esc(s.solicitante||'')}</span><span class="mh-meta">${esc((s.articulos||[]).length)} art. · ${esc(s.fecha||'')}${badge}</span><span class="mh-arrow">›</span></div>`;
+    }).join('');
   }
   function abrirEstadisticas(){
     $('EstWrap').style.display='block';
@@ -2487,18 +2527,17 @@ function crearModuloPermisos(cfg){
     try{
       const url=window.PERM_ENDPOINT;
       if(!url||/PEGA_AQUI/.test(url))throw new Error('Falta configurar el conector de Permisos (Apps Script).');
-      var data=null,sinConfirmar=false;
+      var data=null;
       try{
         const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
         data=await res.json();
       }catch(networkErr){
-        await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
-        sinConfirmar=true;
+        throw new Error('No se pudo confirmar el envío por un problema de red. Antes de volver a intentarlo, revisa "Últimos permisos" en unos segundos para asegurarte de que no quedó guardado igual.');
       }
       if(data && !data.ok)throw new Error(data.error||'Respuesta inválida del conector.');
       code=(data&&data.code)||'';
       try{ if(window.SafecardSolic) await window.SafecardSolic.save(Object.assign({code},payload),'permisos'); }catch(e){}
-      msg.textContent=sinConfirmar?'✅ Enviado (sin confirmación del servidor)':'✅ Enviado'+(code?(' · '+code):'');
+      msg.textContent='✅ Enviado'+(code?(' · '+code):'');
       msg.style.color='var(--green)';
       document.getElementById('peObs').value='';
       document.getElementById('peOtroTxt').value='';document.getElementById('peOtroWrap').style.display='none';
@@ -2508,14 +2547,24 @@ function crearModuloPermisos(cfg){
     }
     btn.disabled=false;
   }
+  async function historialDesdeSheet(){
+    const url=window.PERM_ENDPOINT;
+    if(!url||/PEGA_AQUI/.test(url))return [];
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'data',categoria:'permisos'})});
+    const data=await res.json();
+    if(!data||!data.ok)return [];
+    return (data.rows||[]).map(r=>({code:r.codigo,solicitante:r.solicitante,correo:r.correo,tipo:r.tipo,fechaPermiso:r.fechaPermiso,horario:r.horario,obs:r.obs}))
+      .sort((a,b)=>(b.fechaPermiso||'').localeCompare(a.fechaPermiso||''));
+  }
   async function renderHist(){
     const c=document.getElementById('peHist');if(!c)return;
-    if(!window.SafecardSolic){c.innerHTML='<p class="sub">El historial se verá al conectar la nube.</p>';return;}
-    try{
-      const list=await window.SafecardSolic.list('permisos');
-      if(!list.length){c.innerHTML='<p class="sub">Sin permisos registrados aún.</p>';return;}
-      c.innerHTML=list.slice(0,15).map(s=>`<div class="mhrow"><span class="mh-code">${esc(s.code||'—')}</span><span class="mh-dest"><span class="ico">🗓️</span>${esc(s.solicitante||'')} · ${esc(s.tipo||'')}</span><span class="mh-meta">${esc(s.fechaPermiso||'')} · ${esc(s.horario||'')}</span></div>`).join('');
-    }catch(e){c.innerHTML='<p class="sub">—</p>';}
+    let list=[];
+    try{ list=await historialDesdeSheet(); }catch(e){ list=[]; }
+    if(!list.length && window.SafecardSolic){
+      try{ list=await window.SafecardSolic.list('permisos'); }catch(e){}
+    }
+    if(!list.length){c.innerHTML='<p class="sub">Sin permisos registrados aún.</p>';return;}
+    c.innerHTML=list.slice(0,15).map(s=>`<div class="mhrow"><span class="mh-code">${esc(s.code||'—')}</span><span class="mh-dest"><span class="ico">🗓️</span>${esc(s.solicitante||'')} · ${esc(s.tipo||'')}</span><span class="mh-meta">${esc(s.fechaPermiso||'')} · ${esc(s.horario||'')}</span></div>`).join('');
   }
   async function cargarEstadisticas(){
     const msg=document.getElementById('peEstMsg');msg.textContent='Cargando datos…';
