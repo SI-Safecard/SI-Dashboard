@@ -1918,11 +1918,60 @@ function abrirArchivoRedes(nombreProyecto){
           return;
         }
       }
-      alert('No encontré una pestaña de red para "'+nombreProyecto+'" en el archivo de Redes Safecard configurado.\nVerifica que el nombre coincida con el de la pestaña, o revisa si el proyecto vive en otro archivo (Redes Safecard 1 o 2).');
+      abrirRedesConLinkGuardadoOModal(nombreProyecto);
     }catch(e){
-      alert('Error buscando el archivo de redes: '+(e.message||e));
+      abrirRedesConLinkGuardadoOModal(nombreProyecto, 'Error buscando el archivo de redes: '+(e.message||e));
     }
-  }, (msg)=>alert(msg));
+  }, (msg)=>abrirRedesConLinkGuardadoOModal(nombreProyecto, msg));
+}
+/* Si la búsqueda automática no encuentra la pestaña (o falla por cualquier
+   motivo), se usa un link pegado a mano si ya quedó guardado para este
+   proyecto; si no hay ninguno, se pide pegarlo y queda recordado. */
+function abrirRedesConLinkGuardadoOModal(nombreProyecto, errorMsg){
+  const key = 'redes_link_'+normalizaTexto(nombreProyecto);
+  let guardado = null;
+  try{ guardado = localStorage.getItem(key); }catch(e){}
+  if(guardado){ window.open(guardado, '_blank', 'noopener'); return; }
+  mostrarPegarLinkRedes(nombreProyecto, errorMsg);
+}
+let REDES_PENDING_PROYECTO = null;
+function mostrarPegarLinkRedes(nombreProyecto, errorMsg){
+  REDES_PENDING_PROYECTO = nombreProyecto;
+  const modal=document.getElementById('diagModal'), title=document.getElementById('diagModalTitle'), body=document.getElementById('diagModalBody');
+  if(!modal){
+    const link = prompt((errorMsg?errorMsg+'\n\n':'')+'No encontré el archivo de Redes para "'+nombreProyecto+'". Pega el link manualmente:');
+    if(link && /^https?:\/\//i.test(link.trim())){
+      try{ localStorage.setItem('redes_link_'+normalizaTexto(nombreProyecto), link.trim()); }catch(e){}
+      window.open(link.trim(), '_blank', 'noopener');
+    }
+    return;
+  }
+  modal.style.display='flex';
+  title.textContent='📊 Archivo de Redes · '+nombreProyecto;
+  body.innerHTML =
+    '<div style="padding:6px 2px">'+
+      (errorMsg?'<p style="color:#B91C1C;font-size:13px;margin:0 0 12px">'+esc(errorMsg)+'</p>':'')+
+      '<p style="color:#64748b;font-size:13px;margin:0 0 12px">No encontré automáticamente la pestaña de red para <b>'+esc(nombreProyecto)+'</b>. Si conoces el link (planilla o pestaña específica), pégalo aquí — se abrirá y quedará recordado para la próxima vez.</p>'+
+      '<input type="text" id="redesLinkInput" placeholder="https://docs.google.com/spreadsheets/d/..." style="width:100%;box-sizing:border-box;border:1px solid #E5E7EB;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:12px">'+
+      '<div style="display:flex;gap:10px;justify-content:flex-end">'+
+        '<button class="btn-sec" onclick="cerrarDiagModal()">Cancelar</button>'+
+        '<button class="btn primary" onclick="guardarLinkRedesManual()">Abrir y recordar</button>'+
+      '</div>'+
+    '</div>';
+  setTimeout(()=>{
+    const inp=document.getElementById('redesLinkInput');
+    if(inp){ inp.focus(); inp.addEventListener('keydown', e=>{ if(e.key==='Enter') guardarLinkRedesManual(); }); }
+  }, 50);
+}
+function guardarLinkRedesManual(){
+  const inp=document.getElementById('redesLinkInput');
+  const link=(inp&&inp.value||'').trim();
+  if(!/^https?:\/\//i.test(link)){ alert('Pega un link válido (debe empezar con http:// o https://).'); return; }
+  if(REDES_PENDING_PROYECTO){
+    try{ localStorage.setItem('redes_link_'+normalizaTexto(REDES_PENDING_PROYECTO), link); }catch(e){}
+  }
+  window.open(link, '_blank', 'noopener');
+  cerrarDiagModal();
 }
 function abrirContactoProyecto(nombreProyecto){
   const modal=document.getElementById('diagModal'), title=document.getElementById('diagModalTitle'), body=document.getElementById('diagModalBody');
