@@ -1246,7 +1246,7 @@ function renderExec(activos){
       ${puedeContinuar()?`<a class="btn-cont" href="${esc(window.APP_SEGUIMIENTO_URL)}?proyecto=${encodeURIComponent(p.id)}" target="_blank" rel="noopener">▶️ Continuar avance</a>`:''}
       ${puedeVerFin()?`<a class="btn-cont" style="background:#F26522;margin-top:6px" href="${esc(window.APP_SEGUIMIENTO_URL)}?proyecto=${encodeURIComponent(p.id)}&accion=acta" target="_blank" rel="noopener">📝 Generar Acta de Entrega</a>`:''}
       <button class="btn-cont" style="background:#EDE9FE;color:#6D28D9;border:1px solid #C4B5FD;width:100%;margin-top:6px;cursor:pointer" onclick="abrirDiagramaProyecto('${esc((p.nombre||'').replace(/'/g,"\\'"))}')">🗺️ Ver diagrama de red</button>
-      <button class="btn-cont" style="background:#FCE7F3;color:#BE185D;border:1px solid #FBCFE8;width:100%;margin-top:6px;cursor:pointer" onclick="abrirContactoProyecto('${esc((p.nombre||'').replace(/'/g,"\\'"))}')">📞 Ver contacto</button>
+      <button class="btn-cont" style="background:#FCE7F3;color:#BE185D;border:1px solid #FBCFE8;width:100%;margin-top:6px;cursor:pointer" onclick="abrirContactoProyecto('${esc(p.id)}')">📞 Ver contacto</button>
       <button class="btn-cont" style="background:#DCFCE7;color:#15803D;border:1px solid #86EFAC;width:100%;margin-top:6px;cursor:pointer" onclick="abrirArchivoRedes('${esc((p.nombre||'').replace(/'/g,"\\'"))}')">📊 Ver archivo de redes</button>
     </div>`;
   }).join('');
@@ -1973,37 +1973,48 @@ function guardarLinkRedesManual(){
   window.open(link, '_blank', 'noopener');
   cerrarDiagModal();
 }
-function abrirContactoProyecto(nombreProyecto){
+function renderContactosModal(body, contactos){
+  if(!contactos.length){
+    body.innerHTML='<div style="text-align:center;color:#64748b;padding:40px 0">Este proyecto no tiene ningún contacto registrado todavía.</div>';
+    return;
+  }
+  body.innerHTML = contactos.map(c=>`
+    <div style="padding:14px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:#BE185D;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${esc(c.label)}</div>
+      <div style="font-size:15px;font-weight:700;color:#1E2A38;margin-bottom:6px">${esc(c.n||'—')}</div>
+      ${c.t?`<div style="margin-bottom:4px"><a href="tel:${esc(c.t.replace(/[^0-9+]/g,''))}" style="color:#1D4ED8;text-decoration:none">📱 ${esc(c.t)}</a></div>`:''}
+      ${c.e?`<div><a href="mailto:${esc(c.e)}" style="color:#1D4ED8;text-decoration:none">✉️ ${esc(c.e)}</a></div>`:''}
+    </div>`).join('');
+}
+function contactosDesde(f){
+  return [
+    {label:'Contacto Administración', n:f.ca_n, t:f.ca_t, e:f.ca_e},
+    {label:'Contacto Instalación',     n:f.ci_n, t:f.ci_t, e:f.ci_e},
+    {label:'Contacto Comercial',       n:f.cc_n, t:f.cc_t, e:f.cc_e}
+  ].filter(c=>c.n||c.t||c.e);
+}
+function abrirContactoProyecto(pid){
+  const proy = (window.PROY||[]).find(x=>x.id===pid);
+  const nombreProyecto = (proy&&proy.nombre)||pid;
   const modal=document.getElementById('diagModal'), title=document.getElementById('diagModalTitle'), body=document.getElementById('diagModalBody');
   if(!modal) return;
   modal.style.display='flex';
   title.textContent='📞 Contacto · '+nombreProyecto;
-  body.innerHTML='<div style="text-align:center;color:#64748b;padding:40px 0">Autorizando acceso a Drive…</div>';
+  // Fuente principal: lo que ya cargó/editó la cuadrilla en Seguimiento
+  // (llega junto con el resto del proyecto, sin pedir permisos de Drive).
+  const contactosSeg = proy ? contactosDesde(proy) : [];
+  if(contactosSeg.length){ renderContactosModal(body, contactosSeg); return; }
+  // Respaldo: si Seguimiento no tiene nada cargado aún, busca en el .json
+  // de DP-Safecard guardado en Drive (como funcionaba antes).
+  body.innerHTML='<div style="text-align:center;color:#64748b;padding:40px 0">Sin contactos en Seguimiento — buscando en Drive (Detalle de Proyecto)…</div>';
   ensureDriveToken(async (tok)=>{
-    body.innerHTML='<div style="text-align:center;color:#64748b;padding:40px 0">Buscando los datos del proyecto en Drive…</div>';
     try{
       const found = await driveFindProjectJson(nombreProyecto, tok);
       if(!found){
-        body.innerHTML='<div style="text-align:center;color:#b91c1c;padding:40px 0">No se encontró un archivo de DP-Safecard en Drive para «'+esc(nombreProyecto)+'».<br>Verifica que el nombre del proyecto coincida y que el .json esté guardado en Drive.</div>';
+        body.innerHTML='<div style="text-align:center;color:#b91c1c;padding:40px 0">Este proyecto no tiene contactos cargados en Seguimiento, y tampoco se encontró un archivo de DP-Safecard en Drive para «'+esc(nombreProyecto)+'».<br>Puedes agregarlos directamente desde la app de Seguimiento (pestaña Proyecto → Contactos).</div>';
         return;
       }
-      const f = found.data.fields || {};
-      const contactos = [
-        {label:'Contacto Administración', n:f.ca_n, t:f.ca_t, e:f.ca_e},
-        {label:'Contacto Instalación',     n:f.ci_n, t:f.ci_t, e:f.ci_e},
-        {label:'Contacto Comercial',       n:f.cc_n, t:f.cc_t, e:f.cc_e}
-      ].filter(c=>c.n||c.t||c.e);
-      if(!contactos.length){
-        body.innerHTML='<div style="text-align:center;color:#64748b;padding:40px 0">Este proyecto no tiene ningún contacto registrado en Detalle de Proyecto.</div>';
-        return;
-      }
-      body.innerHTML = contactos.map(c=>`
-        <div style="padding:14px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:10px">
-          <div style="font-size:11px;font-weight:700;color:#BE185D;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${esc(c.label)}</div>
-          <div style="font-size:15px;font-weight:700;color:#1E2A38;margin-bottom:6px">${esc(c.n||'—')}</div>
-          ${c.t?`<div style="margin-bottom:4px"><a href="tel:${esc(c.t.replace(/[^0-9+]/g,''))}" style="color:#1D4ED8;text-decoration:none">📱 ${esc(c.t)}</a></div>`:''}
-          ${c.e?`<div><a href="mailto:${esc(c.e)}" style="color:#1D4ED8;text-decoration:none">✉️ ${esc(c.e)}</a></div>`:''}
-        </div>`).join('');
+      renderContactosModal(body, contactosDesde(found.data.fields || {}));
     }catch(e){
       body.innerHTML='<div style="text-align:center;color:#b91c1c;padding:40px 0">Error: '+esc(e.message||String(e))+'</div>';
     }
