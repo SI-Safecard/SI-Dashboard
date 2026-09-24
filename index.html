@@ -31,8 +31,8 @@
   .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
   h2{font-size:15px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:8px}
   .kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-  .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px}
-  .kpi .v{font-size:30px;font-weight:800;color:var(--or);line-height:1}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0;overflow:hidden}
+  .kpi .v{font-size:30px;font-weight:800;color:var(--or);line-height:1;overflow-wrap:break-word}
   .kpi .l{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:6px}
   .kpi.g .v{color:var(--green)} .kpi.a .v{color:var(--pc)} .kpi.r .v{color:var(--nc)} .kpi.k .v{color:var(--ink)}
   .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
@@ -55,8 +55,8 @@
   .e-green .track > span{background:var(--green)} .e-amber .track > span{background:var(--pc)} .e-red .track > span{background:var(--nc)}
   .plan{font-size:11px;color:var(--muted)}
   .mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
-  .mini > div{background:#F8F9FA;border-radius:9px;padding:8px;text-align:center}
-  .mini .mv{font-size:15px;font-weight:800} .mini .ml{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+  .mini > div{background:#F8F9FA;border-radius:9px;padding:8px 4px;text-align:center;min-width:0;overflow:hidden}
+  .mini .mv{font-size:15px;font-weight:800;overflow-wrap:break-word;word-break:break-word;line-height:1.15} .mini .ml{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
   .foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:11px;color:var(--muted);border-top:1px dashed var(--line);padding-top:9px}
   .bar-row{display:flex;align-items:center;gap:10px;margin:7px 0}
   .bar-row .bn{width:150px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
