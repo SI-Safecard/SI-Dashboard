@@ -206,10 +206,11 @@
   .modal-grid input:focus{outline:none;border-color:var(--or)}
   .modal-grid label:last-child{grid-column:1/-1}
   .fm-calc{margin-top:14px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-  .fm-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 13px;font-size:13px;border-top:1px solid var(--line)}
+  .fm-row{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 10px;padding:9px 13px;font-size:13px;border-top:1px solid var(--line)}
   .fm-row:first-child{border-top:none}
+  .fm-row span{min-width:0;flex:1 1 200px;overflow-wrap:break-word}
   .fm-row small{color:var(--muted);font-weight:500}
-  .fm-row b{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .fm-row b{flex:0 0 auto;margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}
   .fm-tot{background:#F8FAFC;font-weight:800}
   .fm-tot span{font-size:12px;letter-spacing:.4px}
   .modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
@@ -416,6 +417,9 @@
       <div class="kpi g"><div class="v" id="fMargen">—</div><div class="l">Margen promedio</div></div>
       <div class="kpi a"><div class="v" id="fDesvio">0</div><div class="l">Desvío prom. de plazo (días)</div></div>
     </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <button class="btn-sec" onclick="abrirTarifasHH()">⚙️ Configurar tarifas HH</button>
+    </div>
     <div class="card">
       <h2>💰 Costo total por proyecto finalizado</h2>
       <div id="finBars"></div>
@@ -436,9 +440,9 @@
     <div class="modal-grid">
       <label>Días presupuestados (comercial)<input type="number" min="0" step="1" id="fm_diasPres" placeholder="Ej: 20" oninput="fmPreview()"></label>
       <label>Días de ejecución (real) <small style="font-weight:400;color:var(--muted)">deja vacío para usar el calculado</small><input type="number" min="0" step="1" id="fm_diasReales" placeholder="" oninput="fmPreview()"></label>
-      <label>Materiales $<input type="number" min="0" step="1000" id="fm_materiales" placeholder="0" oninput="fmPreview()"></label>
       <label>Costo HH e Instalaciones $<input type="number" min="0" step="1000" id="fm_costoHH" placeholder="Para calcular margen" oninput="fmPreview()"></label>
       <label>Costo Cableado $<input type="number" min="0" step="1000" id="fm_costoCableado" placeholder="Para calcular margen" oninput="fmPreview()"></label>
+      <label>Materiales $<input type="number" min="0" step="1000" id="fm_materiales" placeholder="0" oninput="fmPreview()"></label>
     </div>
     <div id="fmCalc" class="fm-calc"></div>
     <div class="modal-foot">
@@ -620,6 +624,43 @@ async function saveFin(){
   try{ if(!window.SafecardSaveFin)throw new Error('conexión no lista, reintenta en unos segundos'); await window.SafecardSaveFin(FIN_ID,data); closeFin(); }
   catch(e){ alert('No se pudo guardar: '+(e.message||e)); }
   btn.textContent=old;btn.disabled=false;
+}
+function abrirTarifasHH(){
+  const modal=document.getElementById('diagModal'), title=document.getElementById('diagModalTitle'), body=document.getElementById('diagModalBody');
+  if(!modal)return;
+  modal.style.display='flex';
+  title.textContent='⚙️ Tarifas de valor día-hombre (HH)';
+  body.innerHTML =
+    '<div style="padding:6px 2px">'+
+      '<p style="color:#64748b;font-size:13px;margin:0 0 16px">Estas tarifas se aplican automáticamente a TODOS los proyectos finalizados — no se configuran proyecto por proyecto.</p>'+
+      '<label style="display:block;font-size:12px;font-weight:700;color:#6B7280;margin-bottom:4px">Tarifa Técnico $/día</label>'+
+      '<input type="number" min="0" step="1000" id="cfgTarifaTec" value="'+(+window.FIN_TARIFA_TECNICO||0)+'" style="width:100%;box-sizing:border-box;border:1px solid #E5E7EB;border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600;margin-bottom:14px">'+
+      '<label style="display:block;font-size:12px;font-weight:700;color:#6B7280;margin-bottom:4px">Tarifa Jefe de cuadrilla $/día</label>'+
+      '<input type="number" min="0" step="1000" id="cfgTarifaJefe" value="'+(+window.FIN_TARIFA_JEFE_CUADRILLA||0)+'" style="width:100%;box-sizing:border-box;border:1px solid #E5E7EB;border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600;margin-bottom:6px">'+
+      '<div id="cfgTarifasMsg" style="font-size:12px;color:#64748b;min-height:18px;margin-bottom:10px"></div>'+
+      '<div style="display:flex;gap:10px;justify-content:flex-end">'+
+        '<button class="btn-sec" onclick="cerrarDiagModal()">Cancelar</button>'+
+        '<button class="btn primary" onclick="guardarTarifasHH()">💾 Guardar</button>'+
+      '</div>'+
+    '</div>';
+  setTimeout(()=>{ const inp=document.getElementById('cfgTarifaTec'); if(inp)inp.focus(); }, 50);
+}
+async function guardarTarifasHH(){
+  const tec=+document.getElementById('cfgTarifaTec').value||0;
+  const jefe=+document.getElementById('cfgTarifaJefe').value||0;
+  const msg=document.getElementById('cfgTarifasMsg');
+  msg.textContent='Guardando…';msg.style.color='var(--muted)';
+  try{
+    if(!window.SafecardSaveTarifasHH)throw new Error('conexión no lista, reintenta en unos segundos');
+    await window.SafecardSaveTarifasHH(tec,jefe);
+    window.FIN_TARIFA_TECNICO=tec;
+    window.FIN_TARIFA_JEFE_CUADRILLA=jefe;
+    msg.textContent='✅ Guardado. Ya se aplicó a todos los proyectos.';msg.style.color='var(--green)';
+    render();
+    setTimeout(cerrarDiagModal,800);
+  }catch(e){
+    msg.textContent='✗ '+(e.message||e);msg.style.color='var(--nc)';
+  }
 }
 function setView(v){
   if(v==='fin' && !puedeVerFin()){ v='exec'; }
@@ -2766,6 +2807,15 @@ else{
       updateByCode:async(coleccion,code,patch)=>{ const col=coleccion||'solicitudes'; const {getDocs,where,updateDoc}=await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js"); const snap=await getDocs(query(collection(db,col),where('code','==',code))); const ups=[]; snap.forEach(d=>ups.push(updateDoc(doc(db,col,d.id),patch))); await Promise.all(ups); }
     };
     window.SafecardSaveFin=async(id,data)=>{ await setDoc(doc(db,'proyectos',id),Object.assign({},data,{finUpdatedAt:serverTimestamp()}),{merge:true}); };
+    window.SafecardSaveTarifasHH=async(tecnico,jefeCuadrilla)=>{ await setDoc(doc(db,'config','tarifas_hh'),{tecnico,jefeCuadrilla,updatedAt:serverTimestamp()},{merge:true}); };
+    onSnapshot(doc(db,'config','tarifas_hh'),(snap)=>{
+      if(snap.exists()){
+        const d=snap.data();
+        if(d.tecnico!=null)window.FIN_TARIFA_TECNICO=+d.tecnico||0;
+        if(d.jefeCuadrilla!=null)window.FIN_TARIFA_JEFE_CUADRILLA=+d.jefeCuadrilla||0;
+        if(VIEW==='fin')render();
+      }
+    },()=>{ /* si falla (p.ej. reglas de Firestore no actualizadas aún), se sigue usando el valor por defecto del código */ });
     onSnapshot(query(collection(db,'proyectos')),(snap)=>{
       window.PROY=[]; PROY=[];
       snap.forEach(d=>PROY.push(Object.assign({id:d.id},d.data())));
