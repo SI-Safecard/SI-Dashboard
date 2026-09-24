@@ -199,12 +199,17 @@
   .fin-plazo{display:flex;flex-direction:column;gap:2px;background:#F8FAFC;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;margin:8px 0}
   .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:flex-start;justify-content:center;z-index:60;padding:24px 14px;overflow:auto}
   .modal{background:#fff;border-radius:16px;width:100%;max-width:520px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .modal.modal-wide{max-width:960px}
   .modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
   .modal-head h3{font-size:18px}
   .modal-sub{font-size:12px;color:var(--muted);margin-top:3px}
   .mx{background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;line-height:1}
   .modal-note{background:#F1F5F9;border-radius:8px;padding:8px 11px;font-size:12px;color:#475569;margin:12px 0}
   .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .modal-wide .modal-grid{grid-template-columns:repeat(5,1fr)}
+  @media(max-width:900px){.modal-wide .modal-grid{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:640px){.modal-wide .modal-grid{grid-template-columns:1fr 1fr}}
+  .modal-wide .fm-row{padding:11px 18px;font-size:14px}
   .modal-grid label{display:flex;flex-direction:column;font-size:12px;font-weight:700;color:var(--muted);gap:4px}
   .modal-grid input{border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:15px;font-weight:600;color:var(--ink)}
   .modal-grid input:focus{outline:none;border-color:var(--or)}
@@ -288,6 +293,10 @@
           <label class="fl" style="margin-top:16px">Artículos <span class="mat-badge" id="mCount">0</span></label>
           <div id="mItems" class="mitems-box"></div>
           <button type="button" class="btn ghost" onclick="matAddItem()">＋ Agregar artículo</button>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+            <button type="button" class="btn-sec" style="padding:6px 12px;font-size:12px" onclick="cargarMaterialesDesdeSheet()">🔄 Actualizar listado de insumos</button>
+            <span id="matListaMsg" class="sub" style="font-size:11.5px"></span>
+          </div>
           <label class="fl" style="margin-top:16px">Observación (opcional)</label>
           <textarea id="mObs" rows="2" placeholder="Comentario para bodega…"></textarea>
           <div style="margin-top:16px;display:flex;gap:10px;align-items:center">
@@ -435,7 +444,7 @@
 </div>
 
 <div id="finModal" class="modal-bg" style="display:none">
-  <div class="modal">
+  <div class="modal modal-wide">
     <div class="modal-head">
       <div><h3 id="fmTitle">Costos y rentabilidad</h3><div class="modal-sub" id="fmSub"></div></div>
       <button class="mx" onclick="closeFin()">✕</button>
@@ -775,6 +784,55 @@ function render(){
 
 /* ===== SOLICITUD DE MATERIALES ===== */
 let _matReady=false, MAT_DESTINO='camioneta';
+/* Listado de materiales validado en vivo contra la planilla de bodega.
+   La hoja debe estar compartida como "Cualquiera con el enlace puede ver"
+   (no requiere que el usuario inicie sesión ni autorice nada extra) — el
+   nombre del insumo debe ir en la columna A, uno por fila, desde la fila 2. */
+window.MATERIALES_SHEET_ID = "1BbxVWB_1euBvEwvulL1OCXkk5tw4V9OEQLwSPrz1Ja4";
+window.MATERIALES_SHEET_GID = 0;
+try{
+  const cache=localStorage.getItem('materiales_cache');
+  if(cache){ const arr=JSON.parse(cache); if(Array.isArray(arr)&&arr.length)window.MATERIALES=arr; }
+}catch(e){}
+function parseCSVLine(line){
+  const out=[];let cur='';let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(inQ){ if(c==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else inQ=false; } else cur+=c; }
+    else{ if(c==='"')inQ=true; else if(c===','){out.push(cur);cur='';} else cur+=c; }
+  }
+  out.push(cur);
+  return out;
+}
+function refrescarListaMateriales(){
+  const dl=document.getElementById('matList');
+  if(dl)dl.innerHTML=(window.MATERIALES||[]).map(m=>`<option value="${esc(m)}">`).join('');
+}
+async function cargarMaterialesDesdeSheet(silent){
+  const msgEl=document.getElementById('matListaMsg');
+  try{
+    const url='https://docs.google.com/spreadsheets/d/'+window.MATERIALES_SHEET_ID+'/gviz/tq?tqx=out:csv&gid='+(window.MATERIALES_SHEET_GID||0);
+    const res=await fetch(url);
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const text=await res.text();
+    if(/^\s*<(!DOCTYPE|html)/i.test(text))throw new Error('la planilla no está compartida como "Cualquiera con el enlace puede ver"');
+    const lines=text.split(/\r?\n/).filter(l=>l.trim()!=='');
+    const items=[];
+    lines.slice(1).forEach(line=>{
+      const v=(parseCSVLine(line)[0]||'').trim();
+      if(v)items.push(v);
+    });
+    const unicos=Array.from(new Set(items)).sort((a,b)=>a.localeCompare(b,'es'));
+    if(unicos.length){
+      window.MATERIALES=unicos;
+      try{ localStorage.setItem('materiales_cache',JSON.stringify(unicos)); }catch(e){}
+      refrescarListaMateriales();
+      if(msgEl){msgEl.textContent='✅ Listado actualizado desde bodega ('+unicos.length+' insumos) · '+new Date().toLocaleTimeString('es-CL');msgEl.style.color='var(--green)';}
+    }else if(!silent&&msgEl){msgEl.textContent='La planilla no tiene insumos en la columna A (fila 2 en adelante).';msgEl.style.color='var(--pc)';}
+  }catch(e){
+    if(!silent&&msgEl){msgEl.textContent='No se pudo actualizar desde bodega ('+(e.message||e)+'). Se sigue usando el último listado disponible.';msgEl.style.color='var(--nc)';}
+  }
+}
 function matInit(){
   if(!_matReady){
     const dl=document.getElementById('matList');
@@ -783,6 +841,7 @@ function matInit(){
     sel.innerHTML='<option value="">— selecciona —</option>'+(window.TECNICOS||[]).map((t,i)=>`<option value="${i}">${esc(t.nombre)}${t.patente?(' / '+esc(t.patente)):''}</option>`).join('');
     matAddItem();
     _matReady=true;
+    cargarMaterialesDesdeSheet();
   }
   // proyectos en ejecución
   const activos=PROY.filter(p=>!isFin(p));
