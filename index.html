@@ -940,8 +940,23 @@ async function matEnviar(){
     obs:document.getElementById('mObs').value.trim(),
     fecha:new Date().toLocaleString('es-CL')
   };
+  // ¿Ya hay una solicitud reciente (últimos 30 min) del mismo técnico al mismo destino?
+  const similar=matSolicitudReciente(t.correo, destinoTxt, items);
+  if(similar){
+    const mins=Math.max(1,Math.round(similar.minutos));
+    if(!confirm('⚠️ Ya existe la solicitud '+similar.code+' de hace '+mins+' min para "'+destinoTxt+'"'+(similar.mismosItems?' con los MISMOS artículos':'')+'.\n\nSi no viste la confirmación, revisa "Últimas solicitudes": probablemente ya quedó enviada.\n\n¿Seguro que quieres enviar OTRA solicitud?'))return;
+  }
+  // Clave única por solicitud: si se reenvía la misma (mismo técnico, destino y
+  // artículos) se reutiliza la clave y el servidor devuelve el código ya creado
+  // en vez de crear un duplicado.
+  const fp=JSON.stringify({c:t.correo,d:destinoTxt,a:items.map(i=>[String(i.articulo).trim().toLowerCase(),String(i.cantidad)]).sort()});
+  let pend=null; try{pend=JSON.parse(localStorage.getItem('mat_pending')||'null');}catch(e){}
+  if(!pend||pend.fp!==fp){ pend={fp,key:'r_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)}; }
+  try{localStorage.setItem('mat_pending',JSON.stringify(pend));}catch(e){}
+  payload.requestId=pend.key;
+
   const btn=document.getElementById('mSend'),msg=document.getElementById('mMsg');
-  btn.disabled=true;msg.textContent='Enviando…';msg.style.color='var(--muted)';
+  btn.disabled=true;msg.textContent='Enviando… (no cierres ni recargues la página)';msg.style.color='var(--muted)';
   let code='';
   try{
     if(!window.SCM_ENDPOINT||/PEGA_AQUI/.test(window.SCM_ENDPOINT)) throw new Error('Falta configurar el conector de correo/planilla (Apps Script).');
@@ -950,17 +965,19 @@ async function matEnviar(){
       const res=await fetch(window.SCM_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
       data=await res.json();
     }catch(networkErr){
-      // No reintentamos automáticamente: si el servidor ya procesó la solicitud
-      // (aunque el navegador no haya podido leer la respuesta), reenviar acá
-      // generaría una solicitud duplicada en la planilla.
-      throw new Error('No se pudo confirmar el envío por un problema de red. Antes de volver a intentarlo, revisa "Últimas solicitudes" en unos segundos para asegurarte de que no quedó guardada igual.');
+      // La respuesta no llegó, pero el servidor puede haberla guardado igual:
+      // preguntamos por la clave unas veces antes de dar error.
+      msg.textContent='Verificando si quedó guardada…';
+      data=await matVerificarEnvio(pend.key);
+      if(!data) throw new Error('No se pudo confirmar el envío (problema de red). Puedes presionar "Enviar" de nuevo SIN cambiar nada: no se duplicará.');
     }
     if(data && !data.ok) throw new Error(data.error||'Respuesta inválida del conector.');
     code=(data&&data.code)||'';
-    // guardar historial en Firestore
-    try{ if(window.SafecardSolic) await window.SafecardSolic.save(Object.assign({code},payload)); }catch(e){}
-    msg.textContent='✅ Enviado'+(code?(' · '+code):'');
+    try{localStorage.removeItem('mat_pending');}catch(e){}
+    if(!data.duplicado){ try{ if(window.SafecardSolic) await window.SafecardSolic.save(Object.assign({code},payload)); }catch(e){} }
+    msg.textContent='✅ Enviado'+(code?(' · '+code):'')+(data.duplicado?' (ya estaba registrada, no se duplicó)':'');
     msg.style.color='var(--green)';
+    alert('✅ Solicitud enviada correctamente'+(code?(': '+code):'')+(data.duplicado?'\n\n(Ya estaba registrada — no se creó un duplicado.)':''));
     document.getElementById('mObs').value='';document.getElementById('mItems').innerHTML='';matAddItem();
     document.getElementById('mProyectoManual').value='';document.getElementById('mProyectoManual').style.display='none';
     renderMatHist();
@@ -968,6 +985,33 @@ async function matEnviar(){
     msg.textContent='✗ '+(e.message||e);msg.style.color='var(--nc)';
   }
   btn.disabled=false;
+}
+async function matVerificarEnvio(key){
+  for(let i=0;i<4;i++){
+    await new Promise(r=>setTimeout(r,2500));
+    try{
+      const res=await fetch(window.SCM_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'check',requestId:key})});
+      const d=await res.json();
+      if(d&&d.ok&&d.found)return {ok:true,code:d.code,duplicado:true};
+    }catch(e){}
+  }
+  return null;
+}
+function matSolicitudReciente(correo, destinoTxt, items){
+  const norm=x=>normalizaTexto(x||'');
+  const ahora=Date.now();
+  const misItems=items.map(i=>norm(i.articulo)).sort().join('|');
+  for(const s of (MAT_HIST_LIST||[])){
+    if(!s.code||s.code==='—')continue;
+    if(norm(s.correo)!==norm(correo))continue;
+    if(norm(s.destino)!==norm(destinoTxt))continue;
+    const f=new Date(s.fecha); if(isNaN(f))continue;
+    const minutos=(ahora-f.getTime())/60000;
+    if(minutos<0||minutos>30)continue;
+    const susItems=(s.articulos||[]).map(a=>norm(a.articulo)).sort().join('|');
+    return {code:s.code,minutos,mismosItems:susItems===misItems};
+  }
+  return null;
 }
 /* ===== ESTADÍSTICAS DE MATERIALES (filtros + gráfico de torta) ===== */
 let EST_ROWS=[];
