@@ -1322,6 +1322,7 @@ function abrirRecepcionGenerica(modKey,code){
   if(!ctx){alert('Módulo no reconocido.');return;}
   const s=ctx.getHistList().find(x=>x.code===code);
   if(!s){alert('No se encontró esa solicitud.');return;}
+  const btnAn=document.getElementById('recepAnular'); if(btnAn)btnAn.style.display=(modKey==='materiales'&&s.code&&s.code!=='—')?'':'none';
   const prevItems=(s.recepcion&&s.recepcion.items)||[];
   RECEP_STATE={
     modKey, code:s.code, destino:s.destino||s.solicitante||'',
@@ -1365,6 +1366,31 @@ function recepMarcar(i,estado){
 }
 function recepCambiarCantidad(i,val){
   RECEP_STATE.items[i].cantidadRecibida=Math.max(0,Number(val)||0);
+}
+async function anularSolicitud(){
+  if(!RECEP_STATE)return;
+  const code=RECEP_STATE.code, destino=RECEP_STATE.destino;
+  const ctx=RECEP_MODULES[RECEP_STATE.modKey];
+  const yaRecibida=RECEP_STATE.items.some(it=>it.estado);
+  if(!confirm('¿Seguro que quieres ANULAR la solicitud '+code+'?\n'+destino+'\n\nSe eliminará de la planilla y se enviará un correo de anulación a bodega.'+(yaRecibida?'\n\n⚠️ Esta solicitud ya tiene artículos marcados como recibidos / sin stock.':'')+'\n\nEsta acción no se puede deshacer.'))return;
+  const motivo=prompt('Motivo de la anulación (opcional):','');
+  if(motivo===null)return; // canceló el cuadro
+  const msg=document.getElementById('recepMsg'),btn=document.getElementById('recepAnular');
+  btn.disabled=true;msg.textContent='Anulando…';msg.style.color='var(--muted)';
+  try{
+    const url=window[ctx.endpointVar];
+    if(!url||/PEGA_AQUI/.test(url))throw new Error('Falta configurar el conector (Apps Script).');
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'anular',codigo:code,anuladoPor:correoSesion()||'',motivo:motivo.trim()})});
+    const data=await res.json();
+    if(!data||!data.ok)throw new Error((data&&data.error)||'Respuesta inválida del conector.');
+    try{ if(window.SafecardSolic&&window.SafecardSolic.deleteByCode) await window.SafecardSolic.deleteByCode(ctx.coleccion,code); }catch(e){}
+    cerrarRecepcion();
+    alert('✅ Solicitud '+code+' anulada. Se eliminó de la planilla y se envió el correo de anulación.');
+    await ctx.refresh();
+  }catch(e){
+    msg.textContent='✗ '+(e.message||e);msg.style.color='var(--nc)';
+  }
+  btn.disabled=false;
 }
 async function guardarRecepcion(){
   const faltan=RECEP_STATE.items.filter(it=>!it.estado);
@@ -2942,6 +2968,7 @@ else{
     window.SafecardSolic={
       save:async(s,coleccion)=>{ const col=coleccion||'solicitudes'; const id='scm_'+Date.now(); await setDoc(doc(db,col,id),Object.assign({},s,{createdAt:serverTimestamp()})); },
       list:async(coleccion)=>{ const col=coleccion||'solicitudes'; const {getDocs}=await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js"); const q=await getDocs(collection(db,col)); const out=[]; q.forEach(d=>out.push(Object.assign({_docId:d.id},d.data()))); return out.sort((a,b)=>((b.createdAt&&b.createdAt.seconds)||0)-((a.createdAt&&a.createdAt.seconds)||0)); },
+      deleteByCode:async(coleccion,code)=>{ const col=coleccion||'solicitudes'; const {getDocs,where}=await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js"); const snap=await getDocs(query(collection(db,col),where('code','==',code))); const dels=[]; snap.forEach(d=>dels.push(deleteDoc(doc(db,col,d.id)))); await Promise.all(dels); },
       updateByCode:async(coleccion,code,patch)=>{ const col=coleccion||'solicitudes'; const {getDocs,where,updateDoc}=await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js"); const snap=await getDocs(query(collection(db,col),where('code','==',code))); const ups=[]; snap.forEach(d=>ups.push(updateDoc(doc(db,col,d.id),patch))); await Promise.all(ups); }
     };
     window.SafecardSaveFin=async(id,data)=>{ await setDoc(doc(db,'proyectos',id),Object.assign({},data,{finUpdatedAt:serverTimestamp()}),{merge:true}); };
@@ -2988,7 +3015,10 @@ setInterval(()=>{ if(document.getElementById('app').style.display!=='none') rend
     </div>
     <div class="recep-body" id="recepBody"></div>
     <div class="recep-foot">
-      <span class="sub" id="recepMsg"></span>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;min-width:0">
+        <button class="btn-sec" id="recepAnular" onclick="anularSolicitud()" style="color:#B91C1C;border-color:#FCA5A5;background:#FEF2F2">🗑 Anular solicitud</button>
+        <span class="sub" id="recepMsg"></span>
+      </div>
       <div style="display:flex;gap:10px">
         <button class="btn-sec" onclick="cerrarRecepcion()">Cancelar</button>
         <button class="btn primary" id="recepGuardar" onclick="guardarRecepcion()">✓ Guardar recepción</button>
