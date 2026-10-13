@@ -2686,21 +2686,30 @@ function htmlModuloPermisos(){
         </div>
         <div class="mrow2" style="margin-top:16px">
           <div>
-            <label class="fl">Fecha</label>
+            <label class="fl">Fecha desde</label>
             <input type="date" id="peFecha" />
           </div>
+          <div>
+            <label class="fl">Fecha hasta <small style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">(vacío = mismo día)</small></label>
+            <input type="date" id="peFechaHasta" />
+          </div>
+        </div>
+        <div class="mrow2" style="margin-top:16px">
           <div>
             <label class="fl">Horario</label>
             <div class="segbtns">
               <button type="button" class="seg active" id="peSegDia">🗓️ Todo el día</button>
-              <button type="button" class="seg" id="peSegParcial">🕐 Desde una hora</button>
+              <button type="button" class="seg" id="peSegParcial">🕐 Por horas</button>
             </div>
           </div>
           <div id="peDesdeWrap" style="display:none">
-            <label class="fl">Desde</label>
-            <input type="time" id="peDesde" />
+            <div class="mrow2" style="margin-top:0;gap:10px">
+              <div><label class="fl">Hora desde</label><input type="time" id="peDesde" /></div>
+              <div><label class="fl">Hora hasta</label><input type="time" id="peHasta" /></div>
+            </div>
           </div>
         </div>
+        <p class="sub" id="peResumen" style="margin-top:8px;font-size:12px"></p>
         <label class="fl" style="margin-top:16px">Observación (opcional)</label>
         <textarea id="peObs" rows="2" placeholder="Comentario…"></textarea>
         <div style="margin-top:16px;display:flex;gap:10px;align-items:center">
@@ -2767,8 +2776,9 @@ function crearModuloPermisos(cfg){
     document.getElementById('peTipo').addEventListener('change',()=>{
       document.getElementById('peOtroWrap').style.display=(document.getElementById('peTipo').value==='Otros')?'block':'none';
     });
-    document.getElementById('peSegDia').addEventListener('click',()=>setHorario(true));
-    document.getElementById('peSegParcial').addEventListener('click',()=>setHorario(false));
+    document.getElementById('peSegDia').addEventListener('click',()=>{setHorario(true);resumenPermiso();});
+    document.getElementById('peSegParcial').addEventListener('click',()=>{setHorario(false);resumenPermiso();});
+    ['peFecha','peFechaHasta','peDesde','peHasta'].forEach(id=>document.getElementById(id).addEventListener('change',resumenPermiso));
     document.getElementById('peSend').addEventListener('click',enviar);
     $('AbrirEst').addEventListener('click',abrirEstadisticas);
     $('Refrescar').addEventListener('click',cargarEstadisticas);
@@ -2785,6 +2795,15 @@ function crearModuloPermisos(cfg){
     if(!estRows.length)cargarEstadisticas();
     $('EstWrap').scrollIntoView({behavior:'smooth'});
   }
+  function resumenPermiso(){
+    const el=document.getElementById('peResumen'); if(!el)return;
+    const f1=document.getElementById('peFecha').value, f2=document.getElementById('peFechaHasta').value||f1;
+    if(!f1){el.textContent='';return;}
+    const dias=Math.round((new Date(f2+'T00:00')-new Date(f1+'T00:00'))/86400000)+1;
+    const todoDia=document.getElementById('peSegDia').classList.contains('active');
+    const h1=document.getElementById('peDesde').value, h2=document.getElementById('peHasta').value;
+    el.textContent='📌 '+rangoFechasTxt(f1,f2)+(dias>1?' ('+dias+' días)':'')+' · '+(todoDia?'Todo el día':((h1||'--:--')+' a '+(h2||'--:--')));
+  }
   function setHorario(todoDia){
     document.getElementById('peSegDia').classList.toggle('active',todoDia);
     document.getElementById('peSegParcial').classList.toggle('active',!todoDia);
@@ -2794,10 +2813,14 @@ function crearModuloPermisos(cfg){
     const t=((window.TECNICOS_TODOS||window.TECNICOS||[]))[+document.getElementById('peSolic').value];
     if(!t){alert('Selecciona el solicitante.');return;}
     const fecha=document.getElementById('peFecha').value;
-    if(!fecha){alert('Selecciona la fecha del permiso.');return;}
+    if(!fecha){alert('Selecciona la fecha desde.');return;}
+    const fechaHasta=document.getElementById('peFechaHasta').value||fecha;
+    if(fechaHasta<fecha){alert('La fecha hasta no puede ser anterior a la fecha desde.');return;}
     const todoDia=document.getElementById('peSegDia').classList.contains('active');
     const desde=todoDia?'':document.getElementById('peDesde').value;
-    if(!todoDia && !desde){alert('Indica la hora de inicio, o marca "Todo el día".');return;}
+    const hasta=todoDia?'':document.getElementById('peHasta').value;
+    if(!todoDia && (!desde||!hasta)){alert('Indica la hora desde y la hora hasta, o marca "Todo el día".');return;}
+    if(!todoDia && fechaHasta===fecha && hasta<=desde){alert('La hora hasta debe ser posterior a la hora desde.');return;}
     let tipo=document.getElementById('peTipo').value;
     if(tipo==='Otros'){
       const txt=document.getElementById('peOtroTxt').value.trim();
@@ -2807,8 +2830,8 @@ function crearModuloPermisos(cfg){
     const payload={
       categoria:'permisos',
       solicitante:t.nombre, correo:t.correo,
-      tipo:tipo, fechaPermiso:fecha,
-      horario: todoDia?'Todo el día':('Desde '+desde),
+      tipo:tipo, fechaPermiso:fecha, fechaHasta:fechaHasta,
+      horario: todoDia?'Todo el día':('Desde '+desde+' hasta '+hasta),
       obs:document.getElementById('peObs').value.trim(),
       fecha:new Date().toLocaleString('es-CL')
     };
@@ -2844,7 +2867,7 @@ function crearModuloPermisos(cfg){
     const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'data',categoria:'permisos'})});
     const data=await res.json();
     if(!data||!data.ok)return [];
-    return (data.rows||[]).map(r=>({code:r.codigo,solicitante:r.solicitante,correo:r.correo,tipo:r.tipo,fechaPermiso:r.fechaPermiso,horario:r.horario,obs:r.obs,estado:r.estado||'Pendiente'}))
+    return (data.rows||[]).map(r=>({code:r.codigo,solicitante:r.solicitante,correo:r.correo,tipo:r.tipo,fechaPermiso:r.fechaPermiso,fechaHasta:r.fechaHasta,horario:r.horario,obs:r.obs,estado:r.estado||'Pendiente'}))
       .sort((a,b)=>(b.fechaPermiso||'').localeCompare(a.fechaPermiso||''));
   }
   async function renderHist(){
@@ -2855,7 +2878,7 @@ function crearModuloPermisos(cfg){
       try{ list=await window.SafecardSolic.list('permisos'); }catch(e){}
     }
     if(!list.length){c.innerHTML='<p class="sub">Sin permisos registrados aún.</p>';return;}
-    c.innerHTML=list.map(s=>`<div class="mhrow"><span class="mh-code">${esc(s.code||'—')}</span><span class="mh-dest"><span class="ico">🗓️</span>${esc(s.solicitante||'')} · ${esc(s.tipo||'')}</span><span class="mh-meta">${esc(s.fechaPermiso||'')} · ${esc(s.horario||'')}${badgeEstadoPermiso(s.estado)}</span></div>`).join('');
+    c.innerHTML=list.map(s=>`<div class="mhrow"><span class="mh-code">${esc(s.code||'—')}</span><span class="mh-dest"><span class="ico">🗓️</span>${esc(s.solicitante||'')} · ${esc(s.tipo||'')}</span><span class="mh-meta">${esc(rangoFechasTxt(s.fechaPermiso,s.fechaHasta))} · ${esc(s.horario||'')}${badgeEstadoPermiso(s.estado)}</span></div>`).join('');
   }
   async function cargarEstadisticas(){
     const msg=document.getElementById('peEstMsg');msg.textContent='Cargando datos…';
@@ -2905,7 +2928,7 @@ function crearModuloPermisos(cfg){
         const est=r.estado||'Pendiente';
         const rev=r.revisadoPor?`<div style="font-size:10.5px;color:var(--muted)">${esc(estNombreEquipo(r.revisadoPor))}${r.fechaRevision?' · '+esc(r.fechaRevision):''}</div>`:'';
         const acciones=aprob?`<td style="white-space:nowrap"><button class="perm-btn perm-ok" ${est==='Aprobado'?'disabled':''} onclick="MOD_PERM.resolver('${esc(r.codigo)}','Aprobado')">✓ Aprobar</button> <button class="perm-btn perm-no" ${est==='Rechazado'?'disabled':''} onclick="MOD_PERM.resolver('${esc(r.codigo)}','Rechazado')">✕ Rechazar</button></td>`:'';
-        return `<tr><td>${esc(r.fecha||'')}</td><td>${esc(r.codigo||'—')}</td><td>${esc(estNombreEquipo(r.correo))}</td><td>${esc(r.tipo||'')}</td><td>${esc(r.horario||'')}</td><td class="wrap-txt">${esc(r.obs||'')}</td><td>${badgeEstadoPermiso(est,true)}${rev}</td>${acciones}</tr>`;
+        return `<tr><td>${esc(rangoFechasTxt(r.fechaPermiso||r.fecha,r.fechaHasta))}</td><td>${esc(r.codigo||'—')}</td><td>${esc(estNombreEquipo(r.correo))}</td><td>${esc(r.tipo||'')}</td><td>${esc(r.horario||'')}</td><td class="wrap-txt">${esc(r.obs||'')}</td><td>${badgeEstadoPermiso(est,true)}${rev}</td>${acciones}</tr>`;
       }).join('')+'</tbody></table>';
   }
   function exportarCSV(){
@@ -2989,6 +3012,11 @@ function crearModuloPermisos(cfg){
     }catch(e){ msg.textContent='✗ '+(e.message||e); alert('No se pudo guardar la decisión: '+(e.message||e)); }
   }
   return {init,resolver};
+}
+function rangoFechasTxt(f1,f2){
+  const fmt=x=>{const m=String(x||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?(m[3]+'-'+m[2]+'-'+m[1]):String(x||'');};
+  if(!f1)return '';
+  return (f2&&f2!==f1)?(fmt(f1)+' al '+fmt(f2)):fmt(f1);
 }
 function badgeEstadoPermiso(est,grande){
   est=est||'Pendiente';
