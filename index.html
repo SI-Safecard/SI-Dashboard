@@ -114,9 +114,18 @@
   .mhrow .mh-dest .ico{margin-right:4px}
   .mhrow .mh-meta{color:var(--muted);font-size:12px;text-align:right;white-space:nowrap}
   .mhrow-click{cursor:pointer}
+  /* Historial completo con barra de scroll propia (ya no se corta en 15) */
+  #matHist,#epHist,#hrHist,#peHist{max-height:620px;overflow-y:auto;padding-right:6px;overscroll-behavior:contain}
+  #matHist::-webkit-scrollbar,#epHist::-webkit-scrollbar,#hrHist::-webkit-scrollbar,#peHist::-webkit-scrollbar{width:8px}
+  #matHist::-webkit-scrollbar-thumb,#epHist::-webkit-scrollbar-thumb,#hrHist::-webkit-scrollbar-thumb,#peHist::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:8px}
+  .hist-count{font-size:12px;font-weight:700;color:var(--muted);margin-left:6px}
   .mhrow-click:hover{border-color:var(--or)}
   .mh-badge{display:inline-block;margin-left:8px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:800}
   .mh-badge-ok{background:#DCFCE7;color:#15803D}
+  .perm-btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:4px 9px;font-size:11.5px;font-weight:700;cursor:pointer}
+  .perm-btn.perm-ok{color:#15803D;border-color:#86EFAC}.perm-btn.perm-ok:hover{background:#DCFCE7}
+  .perm-btn.perm-no{color:#B91C1C;border-color:#FCA5A5}.perm-btn.perm-no:hover{background:#FEE2E2}
+  .perm-btn:disabled{opacity:.35;cursor:default;background:#fff}
   .mh-badge-warn{background:#FEE2E2;color:#B91C1C}
   .mh-arrow{color:var(--muted);font-size:18px;flex:0 0 auto}
   /* Modal de recepción de materiales */
@@ -308,7 +317,7 @@
       </div>
       <div class="card" style="align-self:start">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-          <h2 style="margin:0">🕓 Últimas solicitudes</h2>
+          <h2 style="margin:0">🕓 Últimas solicitudes <span class="hist-count" id="matHistCount"></span></h2>
           <button class="btn-sec" onclick="abrirEstadisticas()">📊 Estadísticas</button>
         </div>
         <div id="matHist"><p class="sub">—</p></div>
@@ -490,6 +499,9 @@ window.GOOGLE_CLIENT_ID="722203246514-2ljn6due7pt0ihiv8d00ffmu2bbp0if8.apps.goog
 /* Correos que pueden ver la pestaña FINALIZADOS (rentabilidad) */
 window.PANEL_FIN_VIEWERS=["ignacio.fuentes@safecard.cl","pablo.abarca@safecard.cl"];
 /* Correos que pueden ver el botón "▶️ Continuar avance" (editan el avance) */
+/* Únicos correos que ven los botones Aprobar / Rechazar en Permisos */
+window.APROBADORES_PERMISOS=["ignacio.fuentes@safecard.cl"];
+function puedeAprobarPermisos(){const e=correoSesion();return !!e&&(window.APROBADORES_PERMISOS||[]).map(x=>x.toLowerCase()).includes(e);}
 window.PANEL_EDITORES=["ignacio.fuentes@safecard.cl","nicolas.jara@safecard.cl","francisco.morales@safecard.cl","fabian.pavez@safecard.cl","pablo.abarca@safecard.cl"];
 /* Tarifas de valor día-hombre (HH), por rol — se aplican AUTOMÁTICAMENTE a todos
    los proyectos finalizados según sus días reales/presupuestados y la cantidad
@@ -973,6 +985,18 @@ async function matEnviar(){
     }
     if(data && !data.ok) throw new Error(data.error||'Respuesta inválida del conector.');
     code=(data&&data.code)||'';
+    if(data.mailError){
+      // La solicitud SÍ quedó guardada, pero el correo a bodega no salió.
+      // Se deja el formulario igual y la clave pendiente: al presionar Enviar
+      // de nuevo, el servidor reintenta SOLO el correo (sin duplicar).
+      if(!data.duplicado){ try{ if(window.SafecardSolic) await window.SafecardSolic.save(Object.assign({code},payload)); }catch(e){} }
+      msg.textContent='⚠️ '+code+' quedó registrada, pero el CORREO no se envió ('+data.mailError+'). Presiona "Enviar solicitud" de nuevo sin cambiar nada para reintentar el correo.';
+      msg.style.color='var(--pc)';
+      alert('⚠️ La solicitud '+code+' quedó registrada en la planilla, pero el correo a bodega NO se pudo enviar.\n\nMotivo: '+data.mailError+'\n\nPresiona "Enviar solicitud" de nuevo sin cambiar nada: se reintentará solo el correo, sin duplicar la solicitud.');
+      renderMatHist();
+      btn.disabled=false;
+      return;
+    }
     try{localStorage.removeItem('mat_pending');}catch(e){}
     if(!data.duplicado){ try{ if(window.SafecardSolic) await window.SafecardSolic.save(Object.assign({code},payload)); }catch(e){} }
     msg.textContent='✅ Enviado'+(code?(' · '+code):'')+(data.duplicado?' (ya estaba registrada, no se duplicó)':'');
@@ -992,7 +1016,7 @@ async function matVerificarEnvio(key){
     try{
       const res=await fetch(window.SCM_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'check',requestId:key})});
       const d=await res.json();
-      if(d&&d.ok&&d.found)return {ok:true,code:d.code,duplicado:true};
+      if(d&&d.ok&&d.found)return {ok:true,code:d.code,duplicado:true,mailError:d.mailOk?null:'no se pudo confirmar que el correo saliera'};
     }catch(e){}
   }
   return null;
@@ -1298,8 +1322,9 @@ async function renderMatHist(){
     try{ list=await window.SafecardSolic.list(); }catch(e){}
   }
   MAT_HIST_LIST=list;
+  const cnt=document.getElementById('matHistCount'); if(cnt)cnt.textContent=list.length?('('+list.length+')'):'';
   if(!list.length){c.innerHTML='<p class="sub">Sin solicitudes aún.</p>';return;}
-  c.innerHTML=list.slice(0,15).map(s=>{
+  c.innerHTML=list.map(s=>{
     const esCamioneta=/camioneta/i.test(s.destino||'');
     const ico=esCamioneta?'🚚':'🏗️';
     const rec=s.recepcion;
@@ -2469,7 +2494,7 @@ function crearModuloListado(cfg){
     }
     histList=list;
     if(!list.length){c.innerHTML='<p class="sub">Sin solicitudes aún.</p>';return;}
-    c.innerHTML=list.slice(0,15).map(s=>{
+    c.innerHTML=list.map(s=>{
       const rec=s.recepcion;
       let badge='';
       if(rec){
@@ -2819,7 +2844,7 @@ function crearModuloPermisos(cfg){
     const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'data',categoria:'permisos'})});
     const data=await res.json();
     if(!data||!data.ok)return [];
-    return (data.rows||[]).map(r=>({code:r.codigo,solicitante:r.solicitante,correo:r.correo,tipo:r.tipo,fechaPermiso:r.fechaPermiso,horario:r.horario,obs:r.obs}))
+    return (data.rows||[]).map(r=>({code:r.codigo,solicitante:r.solicitante,correo:r.correo,tipo:r.tipo,fechaPermiso:r.fechaPermiso,horario:r.horario,obs:r.obs,estado:r.estado||'Pendiente'}))
       .sort((a,b)=>(b.fechaPermiso||'').localeCompare(a.fechaPermiso||''));
   }
   async function renderHist(){
@@ -2830,7 +2855,7 @@ function crearModuloPermisos(cfg){
       try{ list=await window.SafecardSolic.list('permisos'); }catch(e){}
     }
     if(!list.length){c.innerHTML='<p class="sub">Sin permisos registrados aún.</p>';return;}
-    c.innerHTML=list.slice(0,15).map(s=>`<div class="mhrow"><span class="mh-code">${esc(s.code||'—')}</span><span class="mh-dest"><span class="ico">🗓️</span>${esc(s.solicitante||'')} · ${esc(s.tipo||'')}</span><span class="mh-meta">${esc(s.fechaPermiso||'')} · ${esc(s.horario||'')}</span></div>`).join('');
+    c.innerHTML=list.map(s=>`<div class="mhrow"><span class="mh-code">${esc(s.code||'—')}</span><span class="mh-dest"><span class="ico">🗓️</span>${esc(s.solicitante||'')} · ${esc(s.tipo||'')}</span><span class="mh-meta">${esc(s.fechaPermiso||'')} · ${esc(s.horario||'')}${badgeEstadoPermiso(s.estado)}</span></div>`).join('');
   }
   async function cargarEstadisticas(){
     const msg=document.getElementById('peEstMsg');msg.textContent='Cargando datos…';
@@ -2874,14 +2899,20 @@ function crearModuloPermisos(cfg){
     document.getElementById('peTablaCount').textContent=rows.length;
     if(!rows.length){wrap.innerHTML='<p class="sub" style="padding:14px">Sin resultados para estos filtros.</p>';return;}
     const ordenado=rows.slice().sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
-    wrap.innerHTML='<table><thead><tr><th>Fecha</th><th>Código</th><th>Solicitante</th><th>Tipo</th><th>Horario</th><th class="wrap-txt">Observación</th></tr></thead><tbody>'+
-      ordenado.map(r=>`<tr><td>${esc(r.fecha||'')}</td><td>${esc(r.codigo||'—')}</td><td>${esc(estNombreEquipo(r.correo))}</td><td>${esc(r.tipo||'')}</td><td>${esc(r.horario||'')}</td><td class="wrap-txt">${esc(r.obs||'')}</td></tr>`).join('')+'</tbody></table>';
+    const aprob=puedeAprobarPermisos();
+    wrap.innerHTML='<table><thead><tr><th>Fecha</th><th>Código</th><th>Solicitante</th><th>Tipo</th><th>Horario</th><th class="wrap-txt">Observación</th><th>Estado</th>'+(aprob?'<th>Aprobación</th>':'')+'</tr></thead><tbody>'+
+      ordenado.map(r=>{
+        const est=r.estado||'Pendiente';
+        const rev=r.revisadoPor?`<div style="font-size:10.5px;color:var(--muted)">${esc(estNombreEquipo(r.revisadoPor))}${r.fechaRevision?' · '+esc(r.fechaRevision):''}</div>`:'';
+        const acciones=aprob?`<td style="white-space:nowrap"><button class="perm-btn perm-ok" ${est==='Aprobado'?'disabled':''} onclick="MOD_PERM.resolver('${esc(r.codigo)}','Aprobado')">✓ Aprobar</button> <button class="perm-btn perm-no" ${est==='Rechazado'?'disabled':''} onclick="MOD_PERM.resolver('${esc(r.codigo)}','Rechazado')">✕ Rechazar</button></td>`:'';
+        return `<tr><td>${esc(r.fecha||'')}</td><td>${esc(r.codigo||'—')}</td><td>${esc(estNombreEquipo(r.correo))}</td><td>${esc(r.tipo||'')}</td><td>${esc(r.horario||'')}</td><td class="wrap-txt">${esc(r.obs||'')}</td><td>${badgeEstadoPermiso(est,true)}${rev}</td>${acciones}</tr>`;
+      }).join('')+'</tbody></table>';
   }
   function exportarCSV(){
     const rows=ultimaFiltrada;
     if(!rows.length){alert('No hay datos filtrados para exportar.');return;}
-    const head=['Fecha','Codigo','Solicitante','Correo','Tipo','Horario','Observacion'];
-    const lineas=[head.join(';')].concat(rows.map(r=>[r.fecha||'',r.codigo||'',estNombreEquipo(r.correo),r.correo||'',r.tipo||'',r.horario||'',(r.obs||'').replace(/;/g,',')].join(';')));
+    const head=['Fecha','Codigo','Solicitante','Correo','Tipo','Horario','Observacion','Estado','RevisadoPor'];
+    const lineas=[head.join(';')].concat(rows.map(r=>[r.fecha||'',r.codigo||'',estNombreEquipo(r.correo),r.correo||'',r.tipo||'',r.horario||'',(r.obs||'').replace(/;/g,','),r.estado||'Pendiente',r.revisadoPor||''].join(';')));
     const blob=new Blob(['\uFEFF'+lineas.join('\n')],{type:'text/csv;charset=utf-8'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');a.href=url;a.download='permisos_'+new Date().toISOString().slice(0,10)+'.csv';
@@ -2895,7 +2926,8 @@ function crearModuloPermisos(cfg){
       `<div class="est-kpi"><div class="v">${rows.length}</div><div class="l">Total permisos</div></div>`+
       `<div class="est-kpi"><div class="v">${porTipo['Hora médica']||0}</div><div class="l">Hora médica</div></div>`+
       `<div class="est-kpi"><div class="v">${porTipo['Trámites personales']||0}</div><div class="l">Trámites personales</div></div>`+
-      `<div class="est-kpi"><div class="v">${estUniq(rows.map(r=>r.correo)).length}</div><div class="l">Personas distintas</div></div>`;
+      `<div class="est-kpi"><div class="v">${estUniq(rows.map(r=>r.correo)).length}</div><div class="l">Personas distintas</div></div>`+
+      `<div class="est-kpi"><div class="v" style="color:var(--pc)">${rows.filter(r=>(r.estado||'Pendiente')==='Pendiente').length}</div><div class="l">Pendientes de aprobación</div></div>`;
     pieSVG('pePie',porTipo);
     const porSolicMapa=estAgrupa(rows,'correo');
     const porSolicNombres={};
@@ -2940,7 +2972,28 @@ function crearModuloPermisos(cfg){
       return `<div class="bar-row"><span class="bn" title="${esc(e.label)}">${esc(e.label)}${e.proj?' <small style="color:var(--muted);font-weight:600">(proy.)</small>':''}</span><div class="bt"><span style="width:${pct}%;background:${bg}"></span></div><span class="bv">${e.cantidad.toLocaleString('es-CL')}</span></div>`;
     }).join('');
   }
-  return {init};
+  async function resolver(codigo,decision){
+    if(!puedeAprobarPermisos()){alert('Solo '+(window.APROBADORES_PERMISOS||[]).join(', ')+' puede aprobar o rechazar permisos.');return;}
+    const r=estRows.find(x=>x.codigo===codigo); const quien=r?estNombreEquipo(r.correo):codigo;
+    if(!confirm('¿'+(decision==='Aprobado'?'APROBAR':'RECHAZAR')+' el permiso '+codigo+' de '+quien+'?\n\nSe le enviará un correo con la decisión (copia a Pablo Abarca).'))return;
+    const comentario=prompt('Comentario para el técnico (opcional):','');
+    if(comentario===null)return;
+    const msg=document.getElementById('peEstMsg');msg.textContent='Guardando decisión…';
+    try{
+      const res=await fetch(window.PERM_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'resolverPermiso',codigo,decision,revisadoPor:correoSesion(),comentario:comentario.trim()})});
+      const data=await res.json();
+      if(!data||!data.ok)throw new Error((data&&data.error)||'Respuesta inválida del conector.');
+      estRows.filter(x=>x.codigo===codigo).forEach(x=>{x.estado=data.estado;x.revisadoPor=data.revisadoPor;x.fechaRevision=data.fechaRevision;});
+      renderEst(); renderHist();
+      msg.textContent='✅ Permiso '+codigo+' '+data.estado.toLowerCase()+'. Se notificó al técnico.';
+    }catch(e){ msg.textContent='✗ '+(e.message||e); alert('No se pudo guardar la decisión: '+(e.message||e)); }
+  }
+  return {init,resolver};
+}
+function badgeEstadoPermiso(est,grande){
+  est=est||'Pendiente';
+  const c=est==='Aprobado'?['#DCFCE7','#15803D','✅']:est==='Rechazado'?['#FEE2E2','#B91C1C','⛔']:['#FEF3C7','#92400E','⏳'];
+  return `<span class="mh-badge" style="background:${c[0]};color:${c[1]};${grande?'margin-left:0':''}">${c[2]} ${esc(est)}</span>`;
 }
 const MOD_PERM=crearModuloPermisos({containerId:'sol_permisos'});
 mejorarSelects(document);
