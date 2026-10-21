@@ -632,7 +632,7 @@ function since(ts){if(!ts)return'—';let d;if(ts.seconds)d=new Date(ts.seconds*
 let VIEW='exec';
 function isFin(p){return p.finalizado===true || (p.estado||'').toString().toLowerCase()==='finalizado';}
 function money(n){if(n==null||isNaN(n))return'—';return '$ '+Math.round(n).toLocaleString('es-CL');}
-function pidText(p){return p.pid&&p.pid.trim()?p.pid.trim():String(p.id||'').replace(/^p_/,'');}
+function pidText(p){const base=p.pid&&p.pid.trim()?p.pid.trim():String(p.id||'').replace(/^p_/,'');const up=+p.upgrade||0;return up?(base+' · Upgrade '+up):base;}
 function fmtD(iso){if(!iso)return'—';const d=new Date(iso+'T00:00');if(isNaN(d))return'—';return d.toLocaleDateString('es-CL');}
 function daysDiff(a,b){if(!a||!b)return null;const d=(new Date(b+'T00:00')-new Date(a+'T00:00'))/86400000;return isNaN(d)?null:Math.round(d);}
 async function delProy(id,nombre){
