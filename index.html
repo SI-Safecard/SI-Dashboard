@@ -38,6 +38,8 @@
   .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
   .controls input,.controls select{padding:9px 12px;border:1px solid var(--line);border-radius:10px;font-size:13px;font-family:inherit;background:#fff}
   .controls input{flex:1;min-width:180px}
+  .controls .csel-trigger{padding:9px 12px;border:1px solid var(--line);border-radius:10px;font-size:13px;background:#fff;min-width:170px}
+  .controls .csel-wrap{flex:0 0 auto}
   .grid-proj{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
   .proj{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;position:relative;overflow:hidden}
   .proj::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--grey)}
@@ -236,6 +238,82 @@
   .btn-pri{background:var(--green);border:none;color:#fff;border-radius:9px;padding:10px 18px;font-weight:800;cursor:pointer}
   .btn-pri:disabled{opacity:.6}
   @media(max-width:520px){.modal-grid{grid-template-columns:1fr}}
+
+  /* =================== AJUSTES PARA TELÉFONO =================== */
+  /* Ningún bloque puede ser más ancho que la pantalla */
+  .wrap,.card,.mat-layout>*,.est-charts-grid>*,.grid-proj>*,.kgrid>*,.modal-grid>*,.mrow2>*,.est-filtros>*{min-width:0}
+  .card{max-width:100%}
+  @media (max-width:640px){
+    .wrap{padding:12px 10px}
+    header{padding:10px 12px;gap:10px;flex-wrap:wrap}
+    header img{height:28px}
+    header .t1{font-size:17px}
+    header .t2{font-size:9px;letter-spacing:.1em}
+    header>div:last-child{margin-left:0!important;width:100%;justify-content:flex-start}
+    .ses-user,.live{font-size:11px;padding:5px 9px}
+    .ses-user{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+    .card{padding:14px 12px;border-radius:14px}
+    .card h2{font-size:16px}
+    /* Pestañas principales y de Solicitud: 2 por fila */
+    #solCatBtns{max-width:none!important;flex-wrap:wrap}
+    #solCatBtns .seg{flex:1 1 calc(50% - 8px)}
+    .segbtns{flex-wrap:wrap}
+    .seg{padding:9px 6px;font-size:12.5px}
+    /* KPIs y tarjetas de proyecto */
+    .kgrid{grid-template-columns:repeat(2,1fr);gap:8px}
+    .kpi{padding:12px}
+    .kpi .v{font-size:22px}
+    .kpi .l{font-size:10px}
+    .grid-proj{grid-template-columns:1fr}
+    .controls{gap:8px}
+    .controls input{flex:1 1 100%;min-width:0}
+    .controls .csel-wrap{flex:1 1 calc(50% - 4px);min-width:0}
+    .controls .csel-trigger{min-width:0;width:100%;font-size:14px!important}
+    .big .p{font-size:24px}
+    .mini .mv{font-size:13px}
+    /* Formularios: campos a lo ancho y sin zoom automático del iPhone (≥16px) */
+    .mrow2{grid-template-columns:1fr;gap:10px}
+    input,select,textarea,.csel-trigger{font-size:16px!important}
+    .mitem{grid-template-columns:22px 1fr 62px 32px;gap:6px}
+    .btn.primary{width:100%;padding:13px}
+    /* Historial de solicitudes: código + destino arriba, fecha y estado abajo */
+    .mhrow{display:grid;grid-template-columns:auto 1fr auto;gap:4px 8px;align-items:center;padding:10px}
+    .mhrow .mh-code{grid-column:1;grid-row:1;font-size:11px;white-space:nowrap}
+    .mhrow .mh-dest{grid-column:2;grid-row:1;font-size:13px;line-height:1.25;overflow-wrap:anywhere}
+    .mhrow .mh-arrow{grid-column:3;grid-row:1}
+    .mhrow .mh-meta{grid-column:1/-1;grid-row:2;text-align:left;white-space:normal;font-size:11.5px}
+    .mh-badge{margin-left:6px}
+    #matHist,#epHist,#hrHist,#peHist{max-height:70vh;padding-right:2px}
+    /* Estadísticas */
+    .est-filtros{grid-template-columns:1fr 1fr;gap:8px}
+    .est-kpis{grid-template-columns:1fr 1fr;gap:8px}
+    .est-kpi .v{font-size:18px}
+    .pie-wrap{flex-direction:column;align-items:stretch;gap:14px}
+    .pie-svg{width:180px;height:180px;margin:0 auto}
+    .pie-legend{min-width:0}
+    .bar-row{gap:6px}
+    .bar-row .bn{width:88px;font-size:11px}
+    .bar-row .bv{font-size:11px}
+    .est-table-wrap{-webkit-overflow-scrolling:touch}
+    .est-table-wrap table{font-size:11.5px}
+    .est-h{font-size:12px}
+    /* Ventanas (recepción, costos, contactos, tarifas) */
+    .modal-bg{padding:8px}
+    .modal{padding:14px;border-radius:14px}
+    .modal-wide .modal-grid,.modal-grid{grid-template-columns:1fr}
+    .modal-wide .fm-row{padding:9px 12px;font-size:13px}
+    .recep-backdrop{padding:8px;align-items:flex-end}
+    .recep-modal{max-height:92vh;border-radius:16px 16px 12px 12px}
+    .recep-head,.recep-body,.recep-foot{padding-left:14px;padding-right:14px}
+    .recep-foot{flex-wrap:wrap}
+    .recep-foot>div{width:100%}
+    .recep-foot>div:last-child{justify-content:flex-end}
+    .recep-item{flex-wrap:wrap;gap:8px}
+    .recep-item .ri-nom{flex:1 1 100%}
+    .recep-item .ri-cant{flex:1 1 auto;width:auto}
+    .ri-btn{width:44px;height:40px}
+    .fin-plazo{flex-direction:column;align-items:flex-start;gap:2px}
+  }
 </style>
 </head>
 <body>
