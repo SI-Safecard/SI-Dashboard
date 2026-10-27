@@ -1653,7 +1653,8 @@ function renderFin(fin){
         <div><div class="mv money" style="color:${mgCol}">${c.margen!=null?money(c.margen):'—'}</div><div class="ml">Margen $</div></div>
         <div><div class="mv" style="color:${mgCol}">${mg==null?'—':mg+'%'}</div><div class="ml">Margen %</div></div>
       </div>
-      <div style="margin-top:12px;display:flex;gap:8px">
+      <a class="btn-cont" style="display:block;text-align:center;margin-top:12px;background:#1D4ED8" href="${esc(window.APP_SEGUIMIENTO_URL)}?proyecto=${encodeURIComponent(p.id)}&accion=informe" target="_blank" rel="noopener">📄 Informe de instalación</a>
+      <div style="margin-top:8px;display:flex;gap:8px">
         <button class="btn-fin" onclick="openFin('${esc(p.id)}')">💰 Ingresar / editar costos</button>
         <button class="delbtn" title="Eliminar del panel" onclick="delProy('${esc(p.id)}','${esc((p.nombre||'').replace(/'/g,''))}')">🗑</button>
       </div>
