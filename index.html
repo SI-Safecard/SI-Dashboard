@@ -539,10 +539,10 @@
     <p class="modal-note">🔒 Montos confidenciales. Las tarifas de valor día-hombre (técnico y jefe de cuadrilla) están fijadas de forma global para todos los proyectos; el resto se calcula automático según días reales vs. presupuestados y personas asignadas.</p>
     <div class="modal-grid">
       <label>Días presupuestados (comercial)<input type="number" min="0" step="1" id="fm_diasPres" placeholder="Ej: 20" oninput="fmPreview()"></label>
-      <label>Días de ejecución (real) <small style="font-weight:400;color:var(--muted)">deja vacío para usar el calculado</small><input type="number" min="0" step="1" id="fm_diasReales" placeholder="" oninput="fmPreview()"></label>
+      <label>Días de ejecución (real) <small style="font-weight:400;color:var(--muted)">calculado · no editable</small><input type="text" id="fm_diasReales" readonly tabindex="-1" style="background:#F3F4F6;color:var(--ink);font-weight:800;cursor:default"><small id="fm_diasDetalle" style="font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0;display:block;margin-top:4px"></small></label>
       <label>Costo HH e Instalaciones $<input type="number" min="0" step="1000" id="fm_costoHH" placeholder="Para calcular margen" oninput="fmPreview()"></label>
       <label>Costo Cableado $<input type="number" min="0" step="1000" id="fm_costoCableado" placeholder="Para calcular margen" oninput="fmPreview()"></label>
-      <label>Materiales $<input type="number" min="0" step="1000" id="fm_materiales" placeholder="0" oninput="fmPreview()"></label>
+      <label>Materiales utilizados en la instalación $<input type="number" min="0" step="1000" id="fm_materiales" placeholder="0" oninput="fmPreview()"></label>
     </div>
     <div id="fmCalc" class="fm-calc"></div>
     <div class="modal-foot">
@@ -586,7 +586,7 @@ window.PANEL_EDITORES=["ignacio.fuentes@safecard.cl","nicolas.jara@safecard.cl",
    de personas (técnicos + jefe de cuadrilla). Cámbialas aquí una sola vez, no
    proyecto por proyecto. */
 window.FIN_TARIFA_TECNICO = 45000;        // $/día por técnico
-window.FIN_TARIFA_JEFE_CUADRILLA = 55000; // $/día por jefe de cuadrilla
+window.FIN_TARIFA_JEFE_CUADRILLA = 77500; // $/día por jefe de cuadrilla
 /* Técnicos: correo -> nombre + patente + rol. Rellena patentes/roles reales. */
 window.TECNICOS=[
   {correo:"nicolas.jara@safecard.cl",     nombre:"Nicolás Jara",     patente:"VFCS-91", rol:"jefe"},
@@ -724,10 +724,12 @@ function openFin(id){
   const p=PROY.find(x=>x.id===id);if(!p)return;FIN_ID=id;
   document.getElementById('fmTitle').textContent=p.nombre||'Proyecto';
   const nJefe=p.jefe?1:0;
-  document.getElementById('fmSub').innerHTML='🆔 '+esc(pidText(p))+' &nbsp;·&nbsp; 👷 '+esc(p.jefe||'—')+' &nbsp;·&nbsp; '+(p.nTecnicos||0)+' téc'+(nJefe?' + 1 jefe':'')+' &nbsp;·&nbsp; '+(p.diasReales!=null?p.diasReales+' días de ejecución':'días de ejec. s/i')+' &nbsp;·&nbsp; 💲 téc '+money(window.FIN_TARIFA_TECNICO||0)+'/día · jefe '+money(window.FIN_TARIFA_JEFE_CUADRILLA||0)+'/día';
+  document.getElementById('fmSub').innerHTML='🆔 '+esc(pidText(p))+' &nbsp;·&nbsp; 👷 '+esc(p.jefe||'—')+' &nbsp;·&nbsp; '+computeFin(p).nTec+' téc'+(nJefe?' + 1 jefe':'')+' &nbsp;·&nbsp; '+(computeFin(p).diasReales!=null?computeFin(p).diasReales+' días de ejecución':'días de ejec. s/i')+' &nbsp;·&nbsp; 💲 téc '+money(window.FIN_TARIFA_TECNICO||0)+'/día · jefe '+money(window.FIN_TARIFA_JEFE_CUADRILLA||0)+'/día';
   const g=(k,f)=>document.getElementById(k).value=(p[f]!=null&&p[f]!==''?p[f]:'');
-  g('fm_diasPres','fin_diasPres');g('fm_materiales','fin_materiales');g('fm_costoHH','fin_costoHH');g('fm_costoCableado','fin_costoCableado');g('fm_diasReales','fin_diasReales');
-  document.getElementById('fm_diasReales').placeholder=(p.diasReales!=null?('calculado: '+p.diasReales):'sin dato');
+  g('fm_diasPres','fin_diasPres');g('fm_materiales','fin_materiales');g('fm_costoHH','fin_costoHH');g('fm_costoCableado','fin_costoCableado');
+  const _c=computeFin(p);
+  document.getElementById('fm_diasReales').value=(_c.diasReales!=null?(_c.diasReales+' días'):'sin dato');
+  document.getElementById('fm_diasDetalle').textContent=_c.diasDetalle||'';
   fmPreview();
   document.getElementById('finModal').style.display='flex';
 }
@@ -736,24 +738,26 @@ function fmVal(id){return +document.getElementById(id).value||0;}
 function fmValStr(id){const v=document.getElementById(id).value.trim();return v===''?'':+v;}
 function fmPreview(){
   const p=PROY.find(x=>x.id===FIN_ID)||{};
-  const merged=Object.assign({},p,{fin_diasPres:fmVal('fm_diasPres'),fin_materiales:fmVal('fm_materiales'),fin_costoHH:fmVal('fm_costoHH'),fin_costoCableado:fmVal('fm_costoCableado'),fin_diasReales:fmValStr('fm_diasReales')});
+  const merged=Object.assign({},p,{fin_diasPres:fmVal('fm_diasPres'),fin_materiales:fmVal('fm_materiales'),fin_costoHH:fmVal('fm_costoHH'),fin_costoCableado:fmVal('fm_costoCableado')});
   const c=computeFin(merged);
   const moCol=c.desvioMO<0?'var(--nc)':'var(--green)';
   const dCol=c.desvioPres==null?'var(--muted)':(c.desvioPres>0?'var(--nc)':'var(--green)');
   const mgCol=c.margenPct==null?'var(--muted)':(c.margenPct>=0?'var(--green)':'var(--nc)');
   document.getElementById('fmCalc').innerHTML=`
-    <div class="fm-row"><span>Mano de obra real <small>(${c.nTec} téc + ${c.nJefe} jefe × ${c.diasReales!=null?c.diasReales:0}d${c.diasRealesEdit?', editado':''})</small></span><b>${money(c.moReal)}</b></div>
+    <div class="fm-row"><span>Mano de obra real <small>(${c.nTec} téc + ${c.nJefe} jefe × ${c.diasReales!=null?c.diasReales:0}d)</small></span><b>${money(c.moReal)}</b></div>
     <div class="fm-row"><span>Mano de obra presupuestada <small>(${c.diasPres} días × ${c.nPersonas} personas)</small></span><b>${money(c.moPres)}</b></div>
     <div class="fm-row"><span>Mano de obra: presupuestado − real</span><b style="color:${moCol}">${(c.desvioMO>=0?'+':'')+money(c.desvioMO)}</b></div>
-    <div class="fm-row"><span>Días ejecución vs presupuestados${c.diasRealesEdit?' <small style="color:var(--or-dark)">(editado)</small>':''}</span><b style="color:${dCol}">${c.diasReales!=null?c.diasReales:'—'} / ${c.diasPres||'—'} ${c.desvioPres!=null?'('+(c.desvioPres>0?'+':'')+c.desvioPres+'d)':''}</b></div>
-    <div class="fm-row"><span>Materiales</span><b>${money(c.materiales)}</b></div>
+    <div class="fm-row"><span>Días ejecución vs presupuestados</span><b style="color:${dCol}">${c.diasReales!=null?c.diasReales:'—'} / ${c.diasPres||'—'} ${c.desvioPres!=null?'('+(c.desvioPres>0?'+':'')+c.desvioPres+'d)':''}</b></div>
+    <div class="fm-row"><span>Materiales utilizados en la instalación</span><b>${money(c.materiales)}</b></div>
     <div class="fm-row fm-tot"><span>COSTO TOTAL</span><b>${money(c.costoTotal)}</b></div>
     <div class="fm-row"><span>Costo HH e Instalaciones + Cableado (venta)</span><b>${money(c.venta)}</b></div>
-    <div class="fm-row fm-tot"><span>MARGEN</span><b style="color:${mgCol}">${c.margen!=null?money(c.margen)+' · '+c.margenPct+'%':'ingresa costo HH/cableado'}</b></div>`;
+    ${c.devolucion||c.devolucionDetalle.length?`<div class="fm-row" style="display:block"><details><summary style="cursor:pointer;display:flex;justify-content:space-between;gap:10px;list-style:none"><span>↩️ Equipos devueltos — valor recuperado <small>(${c.devolucionDetalle.length} equipo(s) · ver detalle ▾)</small></span><b style="color:var(--green)">+${money(c.devolucion)}</b></summary>
+      <table style="width:100%;font-size:12px;margin-top:8px;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:4px">Fecha</th><th style="text-align:left;padding:4px">Equipo</th><th style="text-align:left;padding:4px">Sector</th><th style="text-align:right;padding:4px">Valor</th></tr></thead><tbody>${c.devolucionDetalle.map(x=>`<tr style="border-top:1px solid var(--line)"><td style="padding:4px">${esc(fmtD(x.fecha))}</td><td style="padding:4px">${esc(x.nombre)}</td><td style="padding:4px;color:var(--muted)">${esc(x.sector||'')}</td><td style="padding:4px;text-align:right;font-weight:700;${x.encontrado?'':'color:var(--nc)'}">${x.encontrado?money(x.valor):'sin valor'}</td></tr>`).join('')}</tbody></table></details></div>`:''}
+    <div class="fm-row fm-tot"><span>MARGEN${c.devolucion?' <small>(incluye devoluciones)</small>':''}</span><b style="color:${mgCol}">${c.margen!=null?money(c.margen)+' · '+c.margenPct+'%':'ingresa costo HH/cableado'}</b></div>`;
 }
 async function saveFin(){
   if(!FIN_ID){closeFin();return;}
-  const data={fin_diasPres:fmVal('fm_diasPres'),fin_materiales:fmVal('fm_materiales'),fin_costoHH:fmVal('fm_costoHH'),fin_costoCableado:fmVal('fm_costoCableado'),fin_diasReales:fmValStr('fm_diasReales')};
+  const data={fin_diasPres:fmVal('fm_diasPres'),fin_materiales:fmVal('fm_materiales'),fin_costoHH:fmVal('fm_costoHH'),fin_costoCableado:fmVal('fm_costoCableado')};
   const btn=document.getElementById('fmSave');const old=btn.textContent;btn.textContent='Guardando…';btn.disabled=true;
   try{ if(!window.SafecardSaveFin)throw new Error('conexión no lista, reintenta en unos segundos'); await window.SafecardSaveFin(FIN_ID,data); closeFin(); }
   catch(e){ alert('No se pudo guardar: '+(e.message||e)); }
@@ -1580,25 +1584,41 @@ function renderExec(activos){
   }).join(''):'<div class="empty" style="padding:16px">Sin proyectos en ejecución.</div>';
 }
 
+/* Días reales de ejecución (fijos, no editables): lunes a viernes entre inicio y
+   cierre, más los sábados/domingos registrados en la Bitácora de Seguimiento. */
+function diasRealesFijos(p){
+  if(p.diasHabiles!=null){
+    const fd=+p.diasFinde||0, ne=+p.diasNoEfectivosLV||0;
+    return {total:(+p.diasHabiles||0)+fd, detalle:(+p.diasHabiles||0)+' hábiles (L–V)'+(fd?(' + '+fd+' fin de semana'):'')+(ne?(' · '+ne+' no efectivo(s) descontado(s)'):'')};
+  }
+  if(p.inicio&&p.fechaCierre&&p.fechaCierre>=p.inicio){   // proyectos sincronizados antes de este cambio
+    let n=0; for(let d=new Date(p.inicio+'T12:00'); d<=new Date(p.fechaCierre+'T12:00'); d.setDate(d.getDate()+1)){const w=d.getDay(); if(w!==0&&w!==6)n++;}
+    return {total:n, detalle:n+' hábiles (L–V), según fechas de inicio y cierre'};
+  }
+  return {total:(p.diasReales!=null)?+p.diasReales:null, detalle:''};
+}
 function computeFin(p){
   const tarifaTec=+window.FIN_TARIFA_TECNICO||0, tarifaJefe=+window.FIN_TARIFA_JEFE_CUADRILLA||0;
   const diasPres=+p.fin_diasPres||0, materiales=+p.fin_materiales||0;
   const costoHH=+p.fin_costoHH||0, costoCableado=+p.fin_costoCableado||0, venta=costoHH+costoCableado;
-  const nTec=+p.nTecnicos||0, nJefe=p.jefe?1:0, nPersonas=nTec+nJefe;
-  const diasRealesCalc=(p.diasReales!=null)?+p.diasReales:null;
-  const ovr=(p.fin_diasReales!=null&&p.fin_diasReales!=='')?+p.fin_diasReales:null;
-  const diasReales=ovr!=null?ovr:diasRealesCalc;
-  const diasRealesEdit=ovr!=null;
+  const nJefe=p.jefe?1:0;
+  // La cuadrilla que envía Seguimiento ya incluye al jefe: se descuenta para no contarlo dos veces
+  const nTec=(p.nTecSinJefe!=null)?(+p.nTecSinJefe||0):Math.max(0,(+p.nTecnicos||0)-nJefe);
+  const nPersonas=nTec+nJefe;
+  const dr=diasRealesFijos(p);
+  const diasReales=dr.total, diasRealesCalc=dr.total, diasRealesEdit=false, diasDetalle=dr.detalle;
   const diasBase=diasReales!=null?diasReales:0;
   const diasHombre=diasBase*nPersonas;
   const moReal=tarifaTec*diasBase*nTec + tarifaJefe*diasBase*nJefe;
   const dhPres=diasPres*nPersonas, moPres=tarifaTec*diasPres*nTec + tarifaJefe*diasPres*nJefe;
   const costoTotal=moReal+materiales;
-  const margen=venta?venta-costoTotal:null, margenPct=venta?Math.round((venta-costoTotal)/venta*100):null;
+  // Valor recuperado por equipos devueltos (columna E de la planilla de valores): se suma al margen
+  const devolucion=+p.devolucionTotal||0, devolucionDetalle=Array.isArray(p.devolucionDetalle)?p.devolucionDetalle:[];
+  const margen=venta?(venta-costoTotal+devolucion):null, margenPct=venta?Math.round((venta-costoTotal+devolucion)/venta*100):null;
   const desvioPres=(diasReales!=null&&diasPres)?(diasReales-diasPres):null;
   const desvioMO=moPres-moReal; // presupuestado menos real
   const hasData=materiales>0||venta>0||diasPres>0;
-  return{tarifaTec,tarifaJefe,diasPres,materiales,costoHH,costoCableado,venta,diasHombre,nTec,nJefe,nPersonas,diasReales,diasRealesCalc,diasRealesEdit,moReal,dhPres,moPres,costoTotal,margen,margenPct,desvioPres,desvioMO,hasData};
+  return{tarifaTec,tarifaJefe,diasPres,materiales,costoHH,costoCableado,venta,diasHombre,nTec,nJefe,nPersonas,diasReales,diasRealesCalc,diasRealesEdit,diasDetalle,devolucion,devolucionDetalle,moReal,dhPres,moPres,costoTotal,margen,margenPct,desvioPres,desvioMO,hasData};
 }
 function renderFin(fin){
   document.getElementById('finEmpty').style.display=fin.length?'none':'block';
@@ -1640,7 +1660,7 @@ function renderFin(fin){
       <div class="big"><span class="p money">${money(c.costoTotal)}</span><span class="pl">costo total</span></div>
       <div class="mini">
         <div><div class="mv money">${money(c.moReal)}</div><div class="ml">Mano de obra</div></div>
-        <div><div class="mv money">${money(c.materiales)}</div><div class="ml">Materiales</div></div>
+        <div><div class="mv money">${money(c.materiales)}</div><div class="ml">Materiales instalación</div></div>
         <div><div class="mv">${c.nPersonas}</div><div class="ml">Personas</div></div>
       </div>
       <div class="mini" style="margin-top:8px">
@@ -1658,7 +1678,8 @@ function renderFin(fin){
         <button class="btn-fin" onclick="openFin('${esc(p.id)}')">💰 Ingresar / editar costos</button>
         <button class="delbtn" title="Eliminar del panel" onclick="delProy('${esc(p.id)}','${esc((p.nombre||'').replace(/'/g,''))}')">🗑</button>
       </div>
-      <div class="foot"><span>📦 ${p.equiposTotal||0} equipos</span><span>${c.diasReales!=null?c.diasReales+'d reales'+(c.diasRealesEdit?' ✎':''):''}</span></div>
+      ${c.devolucion?`<div class="small" style="margin-top:8px;color:var(--green);font-weight:700">↩️ Devoluciones: +${money(c.devolucion)} sumado al margen (${c.devolucionDetalle.length} equipo(s))</div>`:''}
+      <div class="foot"><span>📦 ${p.equiposTotal||0} equipos</span><span>${c.diasReales!=null?c.diasReales+'d reales':''}</span></div>
     </div>`;
   }).join('');
 }
